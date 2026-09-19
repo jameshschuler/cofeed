@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.local
+.env.*.local
+dist
+PRODUCT_SPEC.md
+.tanstack/
+coverage
+*.log
+.DS_Store
