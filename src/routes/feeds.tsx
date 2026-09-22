@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthLoading } from "../components/AuthLoading";
 import { Feeds } from "../components/Feeds";
+import { LogBottleDialog } from "../components/LogBottleDialog";
 import { PrivateLayout } from "../components/PrivateLayout";
 import { RouteShell } from "../components/RouteShell";
 import { SessionRequired } from "../components/SessionRequired";
@@ -41,6 +42,13 @@ function FeedsPage() {
         screen="feeds"
         errorMessage={errorMessage}
         successMessage={successMessage}
+        headerAction={
+          <LogBottleDialog
+            state={feedsRouteState}
+            actions={feedsRouteActions}
+            preferredDisplayVolumeUnit={displayVolumeUnit}
+          />
+        }
         onNavigate={goTo}
       >
         <Feeds

@@ -9,9 +9,14 @@ import {
   feedLogs,
   householdMembers,
   households,
+  pumpingLogs,
   userPreferences,
 } from "../db/schema";
-import { createFeedRequestSchema, volumeUnitSchema } from "../lib/api-contracts";
+import {
+  createFeedRequestSchema,
+  createPumpingRequestSchema,
+  volumeUnitSchema,
+} from "../lib/api-contracts";
 
 const supabase = createClient(
   process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "",
@@ -222,6 +227,7 @@ export const listFeeds = createServerFn({ method: "GET" })
       .select({
         id: feedLogs.id,
         started_at: feedLogs.startedAt,
+        created_at: feedLogs.createdAt,
         formula_portion_volume: feedLogs.formulaPortionVolume,
         formula_portion_unit: feedLogs.formulaPortionUnit,
         breast_milk_portion_volume: feedLogs.breastMilkPortionVolume,
@@ -246,11 +252,14 @@ export const listFeeds = createServerFn({ method: "GET" })
       .orderBy(desc(feedLogs.startedAt))
       .limit(data.limit);
 
-    return feeds.map(({ logger_email, profile_name, started_at, ...feed }) => ({
-      ...feed,
-      started_at: started_at.toISOString(),
-      logger_name: profile_name ?? logger_email?.split("@")[0] ?? null,
-    }));
+    return feeds.map(
+      ({ logger_email, profile_name, started_at, created_at, ...feed }) => ({
+        ...feed,
+        started_at: started_at.toISOString(),
+        created_at: created_at.toISOString(),
+        logger_name: profile_name ?? logger_email?.split("@")[0] ?? null,
+      }),
+    );
   });
 
 export const createFeed = createServerFn({ method: "POST" })
@@ -278,6 +287,84 @@ export const createFeed = createServerFn({ method: "POST" })
       })
       .returning();
     return feed;
+  });
+
+export const listPumpingLogs = createServerFn({ method: "GET" })
+  .validator(
+    authenticated.extend({
+      babyId: z.string().uuid(),
+      since: z.string().datetime().nullable(),
+      limit: z.number().int().min(1).max(100).default(50),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    await requireBabyMembership(data.babyId, userId);
+    const conditions = [eq(pumpingLogs.babyId, data.babyId)];
+    if (data.since) conditions.push(gte(pumpingLogs.startedAt, new Date(data.since)));
+    const sessions = await db
+      .select({
+        id: pumpingLogs.id,
+        started_at: pumpingLogs.startedAt,
+        created_at: pumpingLogs.createdAt,
+        volume: pumpingLogs.volume,
+        unit: pumpingLogs.unit,
+        household_name: households.name,
+        logger_email: authUsers.email,
+        profile_name: userPreferences.profileName,
+      })
+      .from(pumpingLogs)
+      .innerJoin(babies, eq(babies.id, pumpingLogs.babyId))
+      .innerJoin(households, eq(households.id, babies.householdId))
+      .innerJoin(
+        householdMembers,
+        and(
+          eq(householdMembers.householdId, households.id),
+          eq(householdMembers.userId, userId),
+        ),
+      )
+      .leftJoin(authUsers, eq(authUsers.id, pumpingLogs.createdByUserId))
+      .leftJoin(
+        userPreferences,
+        eq(userPreferences.userId, pumpingLogs.createdByUserId),
+      )
+      .where(and(...conditions))
+      .orderBy(desc(pumpingLogs.startedAt))
+      .limit(data.limit);
+
+    return sessions.map(
+      ({ logger_email, profile_name, started_at, created_at, ...session }) => ({
+        ...session,
+        started_at: started_at.toISOString(),
+        created_at: created_at.toISOString(),
+        logger_name: profile_name ?? logger_email?.split("@")[0] ?? null,
+      }),
+    );
+  });
+
+export const createPumpingLog = createServerFn({ method: "POST" })
+  .validator(authenticated.extend(createPumpingRequestSchema.shape))
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    await requireBabyMembership(data.babyId, userId);
+    const [existing] = await db
+      .select()
+      .from(pumpingLogs)
+      .where(eq(pumpingLogs.idempotencyKey, data.idempotencyKey))
+      .limit(1);
+    if (existing) return existing;
+    const [session] = await db
+      .insert(pumpingLogs)
+      .values({
+        babyId: data.babyId,
+        startedAt: new Date(data.startedAt),
+        volume: data.volume,
+        unit: data.unit,
+        idempotencyKey: data.idempotencyKey,
+        createdByUserId: userId,
+      })
+      .returning();
+    return session;
   });
 
 export const updateFeed = createServerFn({ method: "POST" })

@@ -8,6 +8,7 @@ const tables = [
   "household_members",
   "babies",
   "feed_logs",
+  "pumping_logs",
   "user_preferences",
 ];
 

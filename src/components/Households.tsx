@@ -1,8 +1,9 @@
-import { Clipboard } from "lucide-react";
+import { Clipboard, House } from "lucide-react";
 import { useHouseholdContext } from "./household-context";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { EmptyState } from "./ui/empty-state";
 
 export function Households() {
   const { state, actions } = useHouseholdContext();
@@ -55,9 +56,11 @@ export function Households() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              You are not part of a household.
-            </p>
+            <EmptyState
+              icon={House}
+              title="No household yet"
+              description="Join with a code below, or share yours to invite someone."
+            />
           )}
         </div>
       </section>

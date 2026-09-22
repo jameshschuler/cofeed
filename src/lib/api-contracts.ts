@@ -12,6 +12,14 @@ export const createFeedRequestSchema = z.object({
   idempotencyKey: z.string().uuid(),
 });
 
+export const createPumpingRequestSchema = z.object({
+  babyId: z.string().uuid(),
+  startedAt: z.string().datetime(),
+  volume: z.number().positive(),
+  unit: volumeUnitSchema,
+  idempotencyKey: z.string().uuid(),
+});
+
 export const feedResponseSchema = z.object({
   id: z.string().uuid(),
   babyId: z.string().uuid(),

@@ -21,6 +21,8 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const isResetPasswordScreen = screen === "reset-password";
+
   function clearMessages() {
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -149,6 +151,58 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
     setSuccessMessage("Account created. Check your email to confirm sign up.");
   }
 
+  async function handleRequestPasswordReset(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    clearMessages();
+    setIsSubmitting(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
+      setErrorMessage(error.message || "Unable to send password reset email.");
+      return;
+    }
+
+    setSuccessMessage("Check your email for a password reset link.");
+  }
+
+  async function handleUpdatePassword(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    clearMessages();
+
+    if (!password || password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setIsSubmitting(false);
+
+    if (error) {
+      setErrorMessage(error.message || "Unable to update password.");
+      return;
+    }
+
+    await supabase.auth.signOut();
+    setSession(null);
+    setPassword("");
+    setConfirmPassword("");
+    setSuccessMessage("Password updated. You can now sign in.");
+    if (isResetPasswordScreen) {
+      guardedNavigate("login", { replace: true });
+    }
+  }
+
   async function handleSignOut() {
     clearMessages();
 
@@ -183,6 +237,8 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
     goTo,
     handleLogin,
     handleSignup,
+    handleRequestPasswordReset,
+    handleUpdatePassword,
     handleSignOut,
   };
 }

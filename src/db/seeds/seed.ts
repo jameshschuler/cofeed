@@ -9,6 +9,7 @@ import {
   feedLogs,
   householdMembers,
   households,
+  pumpingLogs,
   userPreferences,
 } from "../schema";
 
@@ -95,6 +96,7 @@ async function seedUserHousehold() {
 
   // Re-seed feeds fresh on every run so reruns always produce visible data.
   await db.delete(feedLogs).where(eq(feedLogs.babyId, babyId));
+  await db.delete(pumpingLogs).where(eq(pumpingLogs.babyId, babyId));
 
   const now = new Date();
   const dailyTemplateFeeds = [
@@ -124,6 +126,15 @@ async function seedUserHousehold() {
         createdByUserId: userId,
       });
     }
+
+    await db.insert(pumpingLogs).values({
+      babyId,
+      startedAt: new Date(now.getTime() - (dayOffset * 24 + 12) * 60 * 60 * 1000),
+      volume: 120 + dayOffset * 15,
+      unit: "ml",
+      idempotencyKey: randomUUID(),
+      createdByUserId: userId,
+    });
   }
 
   await db

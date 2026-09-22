@@ -18,6 +18,9 @@ function DashboardPage() {
     isPreferencesReady,
     feedsRouteState,
     feedsRouteActions,
+    weeklyFeeds,
+    pumpingLogs,
+    weeklyPumpingLogs,
   } = useRouteScreen("dashboard");
 
   if (!isAuthReady || !isPreferencesReady) {
@@ -49,6 +52,9 @@ function DashboardPage() {
       >
         <Dashboard
           feeds={feedsRouteState.list.logs}
+          weeklyFeeds={weeklyFeeds}
+          pumpingLogs={pumpingLogs}
+          weeklyPumpingLogs={weeklyPumpingLogs}
           displayVolumeUnit={displayVolumeUnit}
         />
       </PrivateLayout>

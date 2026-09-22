@@ -4,25 +4,24 @@ import type { Session } from "@supabase/supabase-js";
 import { getAccessToken } from "../lib/auth-token";
 import {
   createFeed,
+  createPumpingLog,
   deleteFeed,
-  getProfile,
-  listFeeds,
   updateFeed,
 } from "../server/functions";
 import type { FeedFilter, FeedLogItem, Screen, VolumeUnit } from "../types/route-types";
 import type { FeedsActions, FeedsState } from "../components/Feeds";
+import { useFeedData } from "./useFeedData";
 
 const ML_PER_OZ = 29.5735;
+const MAX_PORTION_OZ = 60;
+
+function getMaxPortionVolume(unit: VolumeUnit) {
+  return unit === "oz" ? MAX_PORTION_OZ : Math.round(MAX_PORTION_OZ * ML_PER_OZ);
+}
 
 function getLocalDateTimeValue(date = new Date()) {
   const tzOffsetMs = date.getTimezoneOffset() * 60_000;
   return new Date(date.getTime() - tzOffsetMs).toISOString().slice(0, 16);
-}
-
-function getLocalDayStartIso(date = new Date()) {
-  const localDayStart = new Date(date);
-  localDayStart.setHours(0, 0, 0, 0);
-  return localDayStart.toISOString();
 }
 
 type UseFeedsOptions = {
@@ -48,15 +47,22 @@ export function useFeeds({
   setErrorMessage,
   setSuccessMessage,
 }: UseFeedsOptions) {
-  const [feedLogs, setFeedLogs] = useState<FeedLogItem[]>([]);
-  const [activeBabyId, setActiveBabyId] = useState<string | null>(null);
-  const [isLoadingFeeds, setIsLoadingFeeds] = useState(false);
-  const [isSavingFeed, setIsSavingFeed] = useState(false);
-  const [feedsLoadError, setFeedsLoadError] = useState<string | null>(null);
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("today");
+  const feedData = useFeedData({
+    screen,
+    session,
+    feedFilter,
+    setErrorMessage,
+  });
+  const [isSavingFeed, setIsSavingFeed] = useState(false);
   const [composeVolumeUnit, setComposeVolumeUnit] = useState<VolumeUnit | null>(null);
+  const [composeStartedAt, setComposeStartedAt] = useState(() =>
+    getLocalDateTimeValue(),
+  );
   const [feedFormulaPortionVolume, setFeedFormulaPortionVolume] = useState("");
   const [feedBreastMilkPortionVolume, setFeedBreastMilkPortionVolume] = useState("");
+  const [pumpingVolume, setPumpingVolume] = useState("");
+  const [isSavingPumping, setIsSavingPumping] = useState(false);
   const [editingFeedId, setEditingFeedId] = useState<string | null>(null);
   const [editFeedStartedAt, setEditFeedStartedAt] = useState("");
   const [editFeedVolumeUnit, setEditFeedVolumeUnit] = useState<VolumeUnit>(
@@ -73,55 +79,6 @@ export function useFeeds({
     }
   }, [preferredDisplayVolumeUnit]);
 
-  async function refreshFeedLogs(babyId: string, filter: FeedFilter = feedFilter) {
-    try {
-      const feedData = await listFeeds({
-        data: {
-          accessToken: await getAccessToken(),
-          babyId,
-          since: filter === "today" ? getLocalDayStartIso() : null,
-          limit: 50,
-        },
-      });
-      setFeedLogs(feedData);
-    } catch (error) {
-      setFeedsLoadError(
-        error instanceof Error ? error.message : "Unable to load feed logs.",
-      );
-    }
-  }
-
-  useEffect(() => {
-    if ((screen !== "feeds" && screen !== "dashboard") || !session) {
-      return;
-    }
-
-    async function loadFeeds() {
-      setIsLoadingFeeds(true);
-      setFeedsLoadError(null);
-
-      let babyId: string;
-
-      try {
-        ({ babyId } = await getProfile({
-          data: { accessToken: await getAccessToken() },
-        }));
-      } catch (error: unknown) {
-        setIsLoadingFeeds(false);
-        setFeedsLoadError(
-          error instanceof Error ? error.message : "Unable to load baby profile.",
-        );
-        return;
-      }
-
-      setActiveBabyId(babyId);
-      setIsLoadingFeeds(false);
-      await refreshFeedLogs(babyId, screen === "dashboard" ? "today" : feedFilter);
-    }
-
-    void loadFeeds();
-  }, [screen, session, feedFilter]);
-
   async function handleAddFeed(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
@@ -129,12 +86,18 @@ export function useFeeds({
 
     if (!session?.user?.id) {
       setErrorMessage("Sign in required.");
-      return;
+      return false;
     }
 
-    if (!activeBabyId) {
+    if (!feedData.activeBabyId) {
       setErrorMessage("No baby found. Add a baby profile first.");
-      return;
+      return false;
+    }
+
+    const startedAt = new Date(composeStartedAt);
+    if (Number.isNaN(startedAt.getTime())) {
+      setErrorMessage("Enter a valid time.");
+      return false;
     }
 
     const formulaPortionVolume = feedFormulaPortionVolume.trim()
@@ -151,7 +114,18 @@ export function useFeeds({
       breastMilkPortionVolume < 0
     ) {
       setErrorMessage("Enter valid feed volumes for formula and breast milk.");
-      return;
+      return false;
+    }
+
+    const maxPortionVolume = getMaxPortionVolume(composeVolumeUnit ?? "oz");
+    if (
+      formulaPortionVolume > maxPortionVolume ||
+      breastMilkPortionVolume > maxPortionVolume
+    ) {
+      setErrorMessage(
+        `Enter a realistic bottle amount (up to ${maxPortionVolume} ${composeVolumeUnit ?? "oz"} per portion).`,
+      );
+      return false;
     }
 
     const formulaVolumeMl = convertToMl(
@@ -169,7 +143,7 @@ export function useFeeds({
       setErrorMessage(
         "Enter a volume for formula, breast milk, or both before saving.",
       );
-      return;
+      return false;
     }
 
     setIsSavingFeed(true);
@@ -178,8 +152,8 @@ export function useFeeds({
       await createFeed({
         data: {
           accessToken: await getAccessToken(),
-          babyId: activeBabyId,
-          startedAt: new Date().toISOString(),
+          babyId: feedData.activeBabyId,
+          startedAt: startedAt.toISOString(),
           formulaPortionVolume: formulaPortionVolume > 0 ? formulaPortionVolume : null,
           formulaPortionUnit: formulaPortionVolume > 0 ? composeVolumeUnit : null,
           breastMilkPortionVolume:
@@ -193,16 +167,73 @@ export function useFeeds({
         error instanceof Error ? error.message : "Unable to save feed log.",
       );
       setIsSavingFeed(false);
-      return;
+      return false;
     }
 
     setIsSavingFeed(false);
 
     setSuccessMessage("Feed saved.");
+    setComposeStartedAt(getLocalDateTimeValue());
     setFeedFormulaPortionVolume("");
     setFeedBreastMilkPortionVolume("");
 
-    await refreshFeedLogs(activeBabyId);
+    await feedData.refreshFeedLogs(
+      feedData.activeBabyId,
+      screen === "dashboard" ? "today" : feedFilter,
+    );
+    return true;
+  }
+
+  async function handleAddPumping(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!feedData.activeBabyId) {
+      setErrorMessage("No baby found. Add a baby profile first.");
+      return false;
+    }
+
+    const volume = Number(pumpingVolume.trim());
+    const unit = composeVolumeUnit ?? "oz";
+    const startedAt = new Date(composeStartedAt);
+    const maxVolume = getMaxPortionVolume(unit);
+
+    if (
+      !Number.isFinite(volume) ||
+      volume <= 0 ||
+      volume > maxVolume ||
+      Number.isNaN(startedAt.getTime())
+    ) {
+      setErrorMessage(`Enter a valid pumping amount up to ${maxVolume} ${unit}.`);
+      return false;
+    }
+
+    setIsSavingPumping(true);
+    try {
+      await createPumpingLog({
+        data: {
+          accessToken: await getAccessToken(),
+          babyId: feedData.activeBabyId,
+          startedAt: startedAt.toISOString(),
+          volume,
+          unit,
+          idempotencyKey: crypto.randomUUID(),
+        },
+      });
+      setPumpingVolume("");
+      setComposeStartedAt(getLocalDateTimeValue());
+      setSuccessMessage("Pumping session saved.");
+      await feedData.refreshPumpingLogs(feedData.activeBabyId, feedFilter);
+      return true;
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to save pumping session.",
+      );
+      return false;
+    } finally {
+      setIsSavingPumping(false);
+    }
   }
 
   function handleStartEditFeed(feed: FeedLogItem) {
@@ -228,7 +259,7 @@ export function useFeeds({
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!activeBabyId || !editingFeedId) {
+    if (!feedData.activeBabyId || !editingFeedId) {
       return;
     }
 
@@ -249,6 +280,17 @@ export function useFeeds({
       formulaVolume + breastMilkVolume <= 0
     ) {
       setErrorMessage("Enter a valid time and at least one bottle amount.");
+      return;
+    }
+
+    const maxEditPortionVolume = getMaxPortionVolume(editFeedVolumeUnit);
+    if (
+      formulaVolume > maxEditPortionVolume ||
+      breastMilkVolume > maxEditPortionVolume
+    ) {
+      setErrorMessage(
+        `Enter a realistic bottle amount (up to ${maxEditPortionVolume} ${editFeedVolumeUnit} per portion).`,
+      );
       return;
     }
 
@@ -278,14 +320,14 @@ export function useFeeds({
 
     setEditingFeedId(null);
     setSuccessMessage("Feed updated.");
-    await refreshFeedLogs(activeBabyId);
+    await feedData.refreshFeedLogs(feedData.activeBabyId);
   }
 
   async function handleDeleteFeed(feedId: string) {
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!activeBabyId || !globalThis.confirm("Delete this bottle log?")) {
+    if (!feedData.activeBabyId) {
       return;
     }
 
@@ -307,21 +349,24 @@ export function useFeeds({
 
     setEditingFeedId(null);
     setSuccessMessage("Feed deleted.");
-    await refreshFeedLogs(activeBabyId);
+    await feedData.refreshFeedLogs(feedData.activeBabyId);
   }
 
   const feedsRouteState: FeedsState = {
     compose: {
       volumeUnit: composeVolumeUnit,
+      startedAt: composeStartedAt,
       formulaPortionVolume: feedFormulaPortionVolume,
       breastMilkPortionVolume: feedBreastMilkPortionVolume,
+      pumpingVolume,
       isSaving: isSavingFeed,
+      isSavingPumping,
     },
     list: {
       filter: feedFilter,
-      isLoading: isLoadingFeeds,
-      logs: feedLogs,
-      loadError: feedsLoadError,
+      isLoading: feedData.isLoadingFeeds,
+      logs: feedData.feedLogs,
+      loadError: feedData.feedsLoadError,
     },
     edit: {
       editingFeedId,
@@ -336,10 +381,15 @@ export function useFeeds({
 
   const feedsRouteActions: FeedsActions = {
     onComposeVolumeUnitChange: setComposeVolumeUnit,
+    onComposeStartedAtChange: setComposeStartedAt,
     onComposeFormulaPortionVolumeChange: setFeedFormulaPortionVolume,
     onComposeBreastMilkPortionVolumeChange: setFeedBreastMilkPortionVolume,
+    onComposePumpingVolumeChange: setPumpingVolume,
     onSubmitNewFeed: (e) => {
-      void handleAddFeed(e);
+      return handleAddFeed(e);
+    },
+    onSubmitPumping: (e) => {
+      return handleAddPumping(e);
     },
     onFeedFilterChange: setFeedFilter,
     onStartEditFeed: handleStartEditFeed,
@@ -359,5 +409,8 @@ export function useFeeds({
   return {
     feedsRouteState,
     feedsRouteActions,
+    weeklyFeeds: feedData.weeklyFeedLogs,
+    pumpingLogs: feedData.pumpingLogs,
+    weeklyPumpingLogs: feedData.weeklyPumpingLogs,
   };
 }

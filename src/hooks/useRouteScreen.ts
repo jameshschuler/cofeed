@@ -13,6 +13,7 @@ const SCREEN_TO_PATH: Record<Screen, string> = {
   home: "/",
   login: "/login",
   signup: "/signup",
+  "reset-password": "/reset-password",
   dashboard: "/dashboard",
   feeds: "/feeds",
   households: "/households",
@@ -79,7 +80,7 @@ export function useRouteScreen(screen: Screen) {
     handleToggleDarkMode: theme.toggleTheme,
     handleCopyHouseholdCode: () => {
       if (profile.householdJoinCode) {
-        void clipboard.copy(profile.householdJoinCode, "Household code copied.");
+        clipboard.copy(profile.householdJoinCode, "Household code copied.");
       }
     },
   };

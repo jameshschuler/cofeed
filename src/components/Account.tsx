@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
-import { Check, LogOut, Moon, Sun } from "lucide-react";
+import { Check, Download, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useAccountContext } from "./account-context";
+import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
 export function Account() {
   const { state, actions } = useAccountContext();
   const [profileName, setProfileName] = useState(state.profileName);
+  const { canInstall, showIosInstructions, isInstalled, promptInstall } =
+    useInstallPrompt();
 
   useEffect(() => {
     setProfileName(state.profileName);
@@ -112,6 +115,28 @@ export function Account() {
             {state.isDarkMode ? "Use light mode" : "Use dark mode"}
           </Button>
         </section>
+
+        {!isInstalled && (canInstall || showIosInstructions) ? (
+          <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
+            <p className="text-sm font-medium text-foreground">Install CoFeed</p>
+            {canInstall ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 w-full"
+                onClick={() => void promptInstall()}
+              >
+                <Download className="size-4" />
+                Add to home screen
+              </Button>
+            ) : (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Tap the Share icon in Safari, then "Add to Home Screen" to install
+                CoFeed.
+              </p>
+            )}
+          </section>
+        ) : null}
         <section className="p-0">
           <Button
             type="button"

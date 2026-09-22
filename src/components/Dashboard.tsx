@@ -1,10 +1,20 @@
-import type { FeedLogItem, VolumeUnit } from "../types/route-types";
+import { Milk } from "lucide-react";
+import type { FeedLogItem, PumpingLogItem, VolumeUnit } from "../types/route-types";
+import { EmptyState } from "./ui/empty-state";
+import { PumpingStats } from "./PumpingStats";
+import { WeeklyStats } from "./WeeklyStats";
 
 export function Dashboard({
   feeds,
+  weeklyFeeds,
+  pumpingLogs,
+  weeklyPumpingLogs,
   displayVolumeUnit,
 }: {
   feeds: FeedLogItem[];
+  weeklyFeeds: FeedLogItem[];
+  pumpingLogs: PumpingLogItem[];
+  weeklyPumpingLogs: PumpingLogItem[];
   displayVolumeUnit: VolumeUnit;
 }) {
   function toMl(value: number | null, unit: VolumeUnit | null) {
@@ -72,10 +82,20 @@ export function Dashboard({
   }
 
   const lastFeedStartedAt = feeds[0]?.started_at ?? null;
+  const recentActivities = [
+    ...feeds.map((feed) => ({ type: "feed" as const, at: feed.started_at, feed })),
+    ...pumpingLogs.map((session) => ({
+      type: "pumping" as const,
+      at: session.started_at,
+      session,
+    })),
+  ]
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, 5);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex min-h-0 flex-1 flex-col bg-background/40 p-3 sm:p-4">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div className="flex flex-col bg-background/40 p-3 sm:p-4">
         <div className="rounded-lg border bg-muted/30 px-3 py-2">
           <p className="text-xs text-muted-foreground">Today's total</p>
           <p className="text-lg font-semibold text-foreground">
@@ -114,10 +134,49 @@ export function Dashboard({
             </p>
           ) : null}
         </div>
+        <div className="mt-3">
+          <WeeklyStats feeds={weeklyFeeds} displayVolumeUnit={displayVolumeUnit} />
+        </div>
+        <div className="mt-3">
+          <PumpingStats
+            sessions={weeklyPumpingLogs}
+            displayVolumeUnit={displayVolumeUnit}
+          />
+        </div>
         <p className="mt-4 text-sm font-medium text-foreground">Recent activity</p>
-        {feeds.length > 0 ? (
-          <div className="mt-3 space-y-3 overflow-y-auto pr-1">
-            {feeds.slice(0, 5).map((feed) => {
+        {recentActivities.length > 0 ? (
+          <div className="mt-3 space-y-3 pr-1">
+            {recentActivities.map((activity) => {
+              if (activity.type === "pumping") {
+                return (
+                  <div
+                    key={`pumping-${activity.session.id}`}
+                    className="space-y-1 rounded-lg border px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium">
+                        Pumped{" "}
+                        {formatAmount(activity.session.volume, activity.session.unit)}
+                      </p>
+                      <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                        Pump
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(activity.session.started_at).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {activity.session.household_name} ·{" "}
+                      {activity.session.logger_name ?? "Unknown caregiver"}
+                    </p>
+                  </div>
+                );
+              }
+
+              const feed = activity.feed;
               const hasFormula =
                 !!feed.formula_portion_volume && feed.formula_portion_volume > 0;
               const hasBreastMilk =
@@ -130,7 +189,12 @@ export function Dashboard({
               return (
                 <div key={feed.id} className="space-y-2 rounded-lg border px-4 py-3">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium">{formatTotal(totalMl)}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium">{formatTotal(totalMl)}</p>
+                      <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                        Feed
+                      </span>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {new Date(feed.started_at).toLocaleTimeString([], {
                         hour: "numeric",
@@ -171,7 +235,11 @@ export function Dashboard({
             })}
           </div>
         ) : (
-          <p className="mt-1 text-sm text-muted-foreground">No bottles logged today.</p>
+          <EmptyState
+            icon={Milk}
+            title="No bottles logged today"
+            description="Tap + to log your first feed."
+          />
         )}
       </div>
     </div>

@@ -79,6 +79,22 @@ export const feedLogs = cofeed.table("feed_logs", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const pumpingLogs = cofeed.table("pumping_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  babyId: uuid("baby_id")
+    .notNull()
+    .references(() => babies.id, { onDelete: "cascade" }),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  volume: real("volume").notNull(),
+  unit: volumeUnitEnum("unit").notNull(),
+  idempotencyKey: text("idempotency_key").notNull().unique(),
+  createdByUserId: uuid("created_by_user_id")
+    .notNull()
+    .references(() => authUsers.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const userPreferences = cofeed.table("user_preferences", {
   userId: uuid("user_id")
     .primaryKey()

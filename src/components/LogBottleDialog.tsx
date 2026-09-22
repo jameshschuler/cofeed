@@ -9,6 +9,16 @@ import type { FeedsActions, FeedsState } from "./FeedLogList";
 import type { VolumeUnit } from "../types/route-types";
 
 const ML_PER_OZ = 29.5735;
+const MAX_PORTION_OZ = 60;
+
+function getMaxPortionVolume(unit: VolumeUnit) {
+  return unit === "oz" ? MAX_PORTION_OZ : Math.round(MAX_PORTION_OZ * ML_PER_OZ);
+}
+
+function getLocalDateTimeValue(date = new Date()) {
+  const tzOffsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - tzOffsetMs).toISOString().slice(0, 16);
+}
 
 export function LogBottleDialog({
   state,
@@ -20,6 +30,7 @@ export function LogBottleDialog({
   preferredDisplayVolumeUnit: VolumeUnit;
 }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"bottle" | "pumping">("bottle");
 
   function convertToMl(volume: number, unit: VolumeUnit) {
     return unit === "oz" ? volume * ML_PER_OZ : volume;
@@ -40,9 +51,21 @@ export function LogBottleDialog({
     convertToMl(composeFormulaVolume, composeVolumeUnit) +
     convertToMl(composeBreastMilkVolume, composeVolumeUnit);
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    actions.onSubmitNewFeed(e);
-    setOpen(false);
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    if (await actions.onSubmitNewFeed(e)) {
+      setOpen(false);
+    }
+  }
+
+  async function handlePumpingSubmit(e: FormEvent<HTMLFormElement>) {
+    if (await actions.onSubmitPumping(e)) {
+      setOpen(false);
+    }
+  }
+
+  function handleOpen() {
+    actions.onComposeStartedAtChange(getLocalDateTimeValue());
+    setOpen(true);
   }
 
   return (
@@ -52,80 +75,146 @@ export function LogBottleDialog({
         size="icon"
         aria-label="Log a bottle"
         title="Log a bottle"
-        onClick={() => setOpen(true)}
+        onClick={handleOpen}
       >
         <Plus className="size-4" />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Log a bottle</DialogTitle>
+            <DialogTitle>
+              {mode === "bottle" ? "Log a bottle" : "Log pumping session"}
+            </DialogTitle>
           </DialogHeader>
-          <form className="space-y-3" onSubmit={handleSubmit}>
-            <div className="flex items-center justify-between gap-2">
-              <Label>Amount ({state.compose.volumeUnit})</Label>
-              <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={state.compose.volumeUnit === "oz" ? "default" : "ghost"}
-                  className="h-7"
-                  onClick={() => actions.onComposeVolumeUnitChange("oz")}
-                >
-                  oz
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={state.compose.volumeUnit === "ml" ? "default" : "ghost"}
-                  className="h-7"
-                  onClick={() => actions.onComposeVolumeUnitChange("ml")}
-                >
-                  ml
-                </Button>
-              </div>
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+            <Button
+              type="button"
+              size="sm"
+              variant={mode === "bottle" ? "default" : "ghost"}
+              onClick={() => setMode("bottle")}
+            >
+              Bottle
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={mode === "pumping" ? "default" : "ghost"}
+              onClick={() => setMode("pumping")}
+            >
+              Pumping
+            </Button>
+          </div>
+          <form
+            className="space-y-3"
+            onSubmit={mode === "bottle" ? handleSubmit : handlePumpingSubmit}
+          >
+            <div className="space-y-1">
+              <Label htmlFor="feed-started-at">Time</Label>
+              <Input
+                id="feed-started-at"
+                type="datetime-local"
+                value={state.compose.startedAt}
+                onChange={(e) => actions.onComposeStartedAtChange(e.target.value)}
+                required
+              />
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
+            {mode === "bottle" ? (
+              <>
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Amount ({state.compose.volumeUnit})</Label>
+                  <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={state.compose.volumeUnit === "oz" ? "default" : "ghost"}
+                      className="h-7"
+                      onClick={() => actions.onComposeVolumeUnitChange("oz")}
+                    >
+                      oz
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={state.compose.volumeUnit === "ml" ? "default" : "ghost"}
+                      className="h-7"
+                      onClick={() => actions.onComposeVolumeUnitChange("ml")}
+                    >
+                      ml
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="feed-formula-volume">Formula</Label>
+                    <Input
+                      id="feed-formula-volume"
+                      type="number"
+                      min="0"
+                      max={getMaxPortionVolume(composeVolumeUnit)}
+                      step="0.1"
+                      placeholder="0"
+                      value={state.compose.formulaPortionVolume}
+                      onChange={(e) =>
+                        actions.onComposeFormulaPortionVolumeChange(e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="feed-breast-milk-volume">Breast milk</Label>
+                    <Input
+                      id="feed-breast-milk-volume"
+                      type="number"
+                      min="0"
+                      max={getMaxPortionVolume(composeVolumeUnit)}
+                      step="0.1"
+                      placeholder="0"
+                      value={state.compose.breastMilkPortionVolume}
+                      onChange={(e) =>
+                        actions.onComposeBreastMilkPortionVolumeChange(e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total: {formatVolumeMl(composeTotalVolumeMl)}
+                </p>
+              </>
+            ) : (
               <div className="space-y-1">
-                <Label htmlFor="feed-formula-volume">Formula</Label>
+                <Label htmlFor="pumping-volume">Pumped amount</Label>
                 <Input
-                  id="feed-formula-volume"
+                  id="pumping-volume"
                   type="number"
                   min="0"
+                  max={getMaxPortionVolume(composeVolumeUnit)}
                   step="0.1"
                   placeholder="0"
-                  value={state.compose.formulaPortionVolume}
-                  onChange={(e) =>
-                    actions.onComposeFormulaPortionVolumeChange(e.target.value)
-                  }
+                  value={state.compose.pumpingVolume}
+                  onChange={(e) => actions.onComposePumpingVolumeChange(e.target.value)}
                 />
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="feed-breast-milk-volume">Breast milk</Label>
-                <Input
-                  id="feed-breast-milk-volume"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  placeholder="0"
-                  value={state.compose.breastMilkPortionVolume}
-                  onChange={(e) =>
-                    actions.onComposeBreastMilkPortionVolumeChange(e.target.value)
-                  }
-                />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Total: {formatVolumeMl(composeTotalVolumeMl)}
-            </p>
-            <Button type="submit" disabled={state.compose.isSaving}>
-              {state.compose.isSaving ? (
+            )}
+            <Button
+              type="submit"
+              disabled={
+                mode === "bottle"
+                  ? state.compose.isSaving
+                  : state.compose.isSavingPumping
+              }
+            >
+              {(
+                mode === "bottle"
+                  ? state.compose.isSaving
+                  : state.compose.isSavingPumping
+              ) ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Saving feed
+                  Saving
                 </>
-              ) : (
+              ) : mode === "bottle" ? (
                 "Log Bottle"
+              ) : (
+                "Log Pumping"
               )}
             </Button>
           </form>

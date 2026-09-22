@@ -8,6 +8,7 @@ async function run() {
     sql.raw(`
     TRUNCATE TABLE
       cofeed.user_preferences,
+      cofeed.pumping_logs,
       cofeed.feed_logs,
       cofeed.babies,
       cofeed.household_members,

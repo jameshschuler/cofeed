@@ -35,6 +35,7 @@ function LoginPage() {
         onSubmit={(e) => {
           void handleLogin(e);
         }}
+        onForgotPassword={() => goTo("reset-password")}
         onGoToSignup={() => goTo("signup")}
         onGoToHome={() => goTo("home")}
       />

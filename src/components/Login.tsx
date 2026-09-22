@@ -21,6 +21,7 @@ export function Login({
   onEmailChange,
   onPasswordChange,
   onSubmit,
+  onForgotPassword,
   onGoToSignup,
   onGoToHome,
 }: {
@@ -32,6 +33,7 @@ export function Login({
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  onForgotPassword: () => void;
   onGoToSignup: () => void;
   onGoToHome: () => void;
 }) {
@@ -105,6 +107,14 @@ export function Login({
               ) : (
                 "Sign In"
               )}
+            </Button>
+            <Button
+              type="button"
+              variant="link"
+              className="w-full"
+              onClick={onForgotPassword}
+            >
+              Forgot password?
             </Button>
           </div>
         </form>
