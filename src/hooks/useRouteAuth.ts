@@ -21,8 +21,6 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const isResetPasswordScreen = screen === "reset-password";
-
   function clearMessages() {
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -198,9 +196,6 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
     setPassword("");
     setConfirmPassword("");
     setSuccessMessage("Password updated. You can now sign in.");
-    if (isResetPasswordScreen) {
-      guardedNavigate("login", { replace: true });
-    }
   }
 
   async function handleSignOut() {

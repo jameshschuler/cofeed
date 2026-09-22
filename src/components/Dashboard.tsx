@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Milk } from "lucide-react";
 import type { FeedLogItem, PumpingLogItem, VolumeUnit } from "../types/route-types";
 import { EmptyState } from "./ui/empty-state";
@@ -17,6 +18,8 @@ export function Dashboard({
   weeklyPumpingLogs: PumpingLogItem[];
   displayVolumeUnit: VolumeUnit;
 }) {
+  const [currentTime] = useState(() => Date.now());
+
   function toMl(value: number | null, unit: VolumeUnit | null) {
     if (!value || !unit) {
       return 0;
@@ -48,14 +51,13 @@ export function Dashboard({
   }
 
   function formatTimeSince(value: string) {
-    const now = Date.now();
     const then = new Date(value).getTime();
 
     if (!Number.isFinite(then)) {
       return "Unknown";
     }
 
-    const diffMs = Math.max(0, now - then);
+    const diffMs = Math.max(0, currentTime - then);
     const minutes = Math.floor(diffMs / 60_000);
 
     if (minutes < 1) {
