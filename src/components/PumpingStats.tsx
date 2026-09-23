@@ -1,4 +1,6 @@
+import { useState } from "react";
 import {
+  BarElement,
   CategoryScale,
   Chart as ChartJS,
   LineElement,
@@ -7,10 +9,19 @@ import {
   Tooltip,
   type ChartOptions,
 } from "chart.js";
-import { Line } from "react-chartjs-2";
+import { BarChart3, LineChart } from "lucide-react";
+import { Bar, Line } from "react-chartjs-2";
+import { Button } from "./ui/button";
 import type { PumpingLogItem, VolumeUnit } from "../types/route-types";
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Tooltip,
+);
 
 const ML_PER_OZ = 29.5735;
 
@@ -28,10 +39,15 @@ function dayKey(date: Date) {
 export function PumpingStats({
   sessions,
   displayVolumeUnit,
+  isLoading = false,
+  errorMessage = null,
 }: {
   sessions: PumpingLogItem[];
   displayVolumeUnit: VolumeUnit;
+  isLoading?: boolean;
+  errorMessage?: string | null;
 }) {
+  const [chartType, setChartType] = useState<"line" | "bar">("line");
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, index) => {
     const date = new Date(today);
@@ -59,10 +75,11 @@ export function PumpingStats({
         backgroundColor: primary,
         pointRadius: 3,
         tension: 0.3,
+        borderRadius: chartType === "bar" ? 4 : undefined,
       },
     ],
   };
-  const options: ChartOptions<"line"> = {
+  const options: ChartOptions<"line" | "bar"> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -79,10 +96,50 @@ export function PumpingStats({
 
   return (
     <section className="rounded-lg border bg-muted/30 px-3 py-3">
-      <p className="text-xs text-muted-foreground">Pumping history · last 7 days</p>
-      <div className="mt-3 h-32">
-        <Line data={data} options={options} />
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">Pumps · last 7 days</p>
+        {!isLoading && !errorMessage ? (
+          <div className="grid grid-cols-2 overflow-hidden rounded-lg bg-muted">
+            <Button
+              type="button"
+              size="icon-sm"
+              variant={chartType === "line" ? "default" : "ghost"}
+              className="rounded-none"
+              title="Line chart"
+              aria-label="Line chart"
+              onClick={() => setChartType("line")}
+            >
+              <LineChart className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant={chartType === "bar" ? "default" : "ghost"}
+              className="rounded-none"
+              title="Bar chart"
+              aria-label="Bar chart"
+              onClick={() => setChartType("bar")}
+            >
+              <BarChart3 className="size-4" />
+            </Button>
+          </div>
+        ) : null}
       </div>
+      {isLoading ? (
+        <p className="mt-3 text-xs text-muted-foreground">Loading pumping stats...</p>
+      ) : errorMessage ? (
+        <p className="mt-3 text-xs text-destructive">{errorMessage}</p>
+      ) : (
+        <>
+          <div className="mt-3 h-32">
+            {chartType === "line" ? (
+              <Line data={data} options={options as ChartOptions<"line">} />
+            ) : (
+              <Bar data={data} options={options as ChartOptions<"bar">} />
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
 }

@@ -93,12 +93,12 @@ export function FeedLogList({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground">Recent feeds</p>
         <div className="flex items-center gap-2">
-          <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+          <div className="grid grid-cols-2 overflow-hidden rounded-lg bg-muted">
             <Button
               type="button"
               size="sm"
               variant={state.list.filter === "today" ? "default" : "ghost"}
-              className="h-7"
+              className="h-8 rounded-none"
               onClick={() => actions.onFeedFilterChange("today")}
             >
               Today
@@ -107,14 +107,14 @@ export function FeedLogList({
               type="button"
               size="sm"
               variant={state.list.filter === "all" ? "default" : "ghost"}
-              className="h-7"
+              className="h-8 rounded-none"
               onClick={() => actions.onFeedFilterChange("all")}
             >
               All
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-            <span className="px-2 py-1 text-xs text-muted-foreground">
+          <div className="flex items-center rounded-lg border border-border/70 px-3 py-1.5">
+            <span className="text-xs text-muted-foreground">
               Display: {preferredDisplayVolumeUnit}
             </span>
           </div>

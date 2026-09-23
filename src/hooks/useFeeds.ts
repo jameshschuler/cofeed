@@ -84,6 +84,11 @@ export function useFeeds({
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    if (feedData.isUsingCachedActivity) {
+      setErrorMessage("Offline mode is read-only. Reconnect to log a feed.");
+      return false;
+    }
+
     if (!session?.user?.id) {
       setErrorMessage("Sign in required.");
       return false;
@@ -188,6 +193,11 @@ export function useFeeds({
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
+
+    if (feedData.isUsingCachedActivity) {
+      setErrorMessage("Offline mode is read-only. Reconnect to log pumping.");
+      return false;
+    }
 
     if (!feedData.activeBabyId) {
       setErrorMessage("No baby found. Add a baby profile first.");
@@ -412,5 +422,10 @@ export function useFeeds({
     weeklyFeeds: feedData.weeklyFeedLogs,
     pumpingLogs: feedData.pumpingLogs,
     weeklyPumpingLogs: feedData.weeklyPumpingLogs,
+    isLoadingWeeklyStats: feedData.isLoadingWeeklyStats,
+    weeklyFeedError: feedData.weeklyFeedError,
+    weeklyPumpingError: feedData.weeklyPumpingError,
+    isUsingCachedActivity: feedData.isUsingCachedActivity,
+    lastSyncedAt: feedData.lastSyncedAt,
   };
 }

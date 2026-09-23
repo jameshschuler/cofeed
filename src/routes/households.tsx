@@ -23,11 +23,18 @@ function HouseholdsPage() {
     setJoinCode,
     joinHousehold,
     householdJoinCode,
+    householdRole,
     handleCopyHouseholdCode,
     households,
     isLoadingHouseholds,
     leavingHouseholdId,
     leaveHousehold,
+    membersByHousehold,
+    removingMemberKey,
+    removeMember,
+    babyProfile,
+    isSavingBabyProfile,
+    saveBabyProfile,
   } = useRouteScreen("households");
 
   if (!isAuthReady) {
@@ -56,9 +63,14 @@ function HouseholdsPage() {
               joinCode,
               isJoiningHousehold,
               householdJoinCode,
+              householdRole,
               households,
               isLoadingHouseholds,
               leavingHouseholdId,
+              membersByHousehold,
+              removingMemberKey,
+              babyProfile,
+              isSavingBabyProfile,
             } satisfies HouseholdState
           }
           actions={
@@ -66,6 +78,10 @@ function HouseholdsPage() {
               onJoinCodeChange: setJoinCode,
               onJoinHousehold: () => void joinHousehold(),
               onLeaveHousehold: (householdId) => void leaveHousehold(householdId),
+              onRemoveMember: (householdId, memberUserId) =>
+                void removeMember(householdId, memberUserId),
+              onSaveBabyProfile: (name, dateOfBirth) =>
+                void saveBabyProfile(name, dateOfBirth),
               onCopyHouseholdCode: () => void handleCopyHouseholdCode(),
             } satisfies HouseholdActions
           }

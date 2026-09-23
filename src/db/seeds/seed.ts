@@ -70,6 +70,38 @@ async function seedUserHousehold() {
     });
   }
 
+  const coParentId = await resolveUserIdByEmail(SHARED_USER_EMAILS[1]);
+  const [coParentMembership] = await db
+    .select({ id: householdMembers.id })
+    .from(householdMembers)
+    .where(
+      and(
+        eq(householdMembers.householdId, householdId),
+        eq(householdMembers.userId, coParentId),
+      ),
+    )
+    .limit(1);
+
+  if (!coParentMembership) {
+    await db.insert(householdMembers).values({
+      householdId,
+      userId: coParentId,
+      role: "caregiver",
+    });
+  }
+
+  await db
+    .insert(userPreferences)
+    .values({
+      userId: coParentId,
+      profileName: "Co-parent",
+      displayVolumeUnit: "ml",
+    })
+    .onConflictDoUpdate({
+      target: userPreferences.userId,
+      set: { profileName: "Co-parent", displayVolumeUnit: "ml", updatedAt: new Date() },
+    });
+
   let babyId: string;
   const [existingBaby] = await db
     .select({ id: babies.id })
@@ -173,6 +205,23 @@ async function seedSharedHousehold() {
       .returning({ id: households.id });
   }
 
+  const existingOwnerFlags = await Promise.all(
+    userIds.map(async (userId) => {
+      const [ownerMembership] = await db
+        .select({ id: householdMembers.id })
+        .from(householdMembers)
+        .where(
+          and(eq(householdMembers.userId, userId), eq(householdMembers.role, "owner")),
+        )
+        .limit(1);
+      return Boolean(ownerMembership);
+    }),
+  );
+  const ownerIndex = existingOwnerFlags.findIndex((hasOwner) => !hasOwner);
+  if (ownerIndex < 0) {
+    throw new Error("No shared seed user is available to own the household.");
+  }
+
   for (const [index, userId] of userIds.entries()) {
     const [membership] = await db
       .select({ id: householdMembers.id })
@@ -189,9 +238,30 @@ async function seedSharedHousehold() {
       await db.insert(householdMembers).values({
         householdId: household.id,
         userId,
-        role: index === 1 ? "owner" : "caregiver",
+        role: index === ownerIndex ? "owner" : "caregiver",
       });
+    } else {
+      await db
+        .update(householdMembers)
+        .set({ role: index === ownerIndex ? "owner" : "caregiver" })
+        .where(eq(householdMembers.id, membership.id));
     }
+
+    await db
+      .insert(userPreferences)
+      .values({
+        userId,
+        profileName: index === 0 ? "James" : "Co-parent",
+        displayVolumeUnit: "ml",
+      })
+      .onConflictDoUpdate({
+        target: userPreferences.userId,
+        set: {
+          profileName: index === 0 ? "James" : "Co-parent",
+          displayVolumeUnit: "ml",
+          updatedAt: new Date(),
+        },
+      });
   }
 
   let [baby] = await db

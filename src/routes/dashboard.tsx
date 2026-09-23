@@ -21,6 +21,11 @@ function DashboardPage() {
     weeklyFeeds,
     pumpingLogs,
     weeklyPumpingLogs,
+    isLoadingWeeklyStats,
+    weeklyFeedError,
+    weeklyPumpingError,
+    isUsingCachedActivity,
+    lastSyncedAt,
   } = useRouteScreen("dashboard");
 
   if (!isAuthReady || !isPreferencesReady) {
@@ -55,6 +60,11 @@ function DashboardPage() {
           weeklyFeeds={weeklyFeeds}
           pumpingLogs={pumpingLogs}
           weeklyPumpingLogs={weeklyPumpingLogs}
+          isLoadingWeeklyStats={isLoadingWeeklyStats}
+          weeklyFeedError={weeklyFeedError}
+          weeklyPumpingError={weeklyPumpingError}
+          isUsingCachedActivity={isUsingCachedActivity}
+          lastSyncedAt={lastSyncedAt}
           displayVolumeUnit={displayVolumeUnit}
         />
       </PrivateLayout>

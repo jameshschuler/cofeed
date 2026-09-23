@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createFeedRequestSchema, createPumpingRequestSchema } from "./api-contracts";
+import {
+  createFeedRequestSchema,
+  createPumpingRequestSchema,
+  updateBabyProfileRequestSchema,
+} from "./api-contracts";
 
 describe("activity request contracts", () => {
   it("accepts a bottle feed with nullable portions", () => {
@@ -34,5 +38,15 @@ describe("activity request contracts", () => {
 
     expect(valid.success).toBe(true);
     expect(invalid.success).toBe(false);
+  });
+
+  it("rejects an empty baby name and future date of birth", () => {
+    const result = updateBabyProfileRequestSchema.safeParse({
+      babyId: "2f55973a-da57-4cdc-81cc-b34c312af634",
+      name: "",
+      dateOfBirth: "2999-01-01",
+    });
+
+    expect(result.success).toBe(false);
   });
 });

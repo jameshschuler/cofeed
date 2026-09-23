@@ -64,6 +64,13 @@
       "when": 1790048663368,
       "tag": "0014_pumping_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790050000000,
+      "tag": "0015_one_owner_per_user",
+      "breakpoints": true
     }
   ]
 }

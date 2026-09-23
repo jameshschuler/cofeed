@@ -20,6 +20,17 @@ export const createPumpingRequestSchema = z.object({
   idempotencyKey: z.string().uuid(),
 });
 
+export const updateBabyProfileRequestSchema = z.object({
+  babyId: z.string().uuid(),
+  name: z.string().trim().min(1).max(80),
+  dateOfBirth: z
+    .string()
+    .date()
+    .refine((value) => value <= new Date().toISOString().slice(0, 10), {
+      message: "Date of birth cannot be in the future.",
+    }),
+});
+
 export const feedResponseSchema = z.object({
   id: z.string().uuid(),
   babyId: z.string().uuid(),
@@ -36,6 +47,7 @@ export const feedResponseSchema = z.object({
 export const listFeedsRequestSchema = z.object({
   babyId: z.string().uuid(),
   since: z.string().datetime().nullable().optional(),
+  range: z.enum(["today", "week", "all"]).default("all"),
   limit: z.number().int().min(1).max(100).default(50),
 });
 

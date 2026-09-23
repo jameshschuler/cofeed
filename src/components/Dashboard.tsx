@@ -10,12 +10,22 @@ export function Dashboard({
   weeklyFeeds,
   pumpingLogs,
   weeklyPumpingLogs,
+  isLoadingWeeklyStats,
+  weeklyFeedError,
+  weeklyPumpingError,
+  isUsingCachedActivity,
+  lastSyncedAt,
   displayVolumeUnit,
 }: {
   feeds: FeedLogItem[];
   weeklyFeeds: FeedLogItem[];
   pumpingLogs: PumpingLogItem[];
   weeklyPumpingLogs: PumpingLogItem[];
+  isLoadingWeeklyStats: boolean;
+  weeklyFeedError: string | null;
+  weeklyPumpingError: string | null;
+  isUsingCachedActivity: boolean;
+  lastSyncedAt: string | null;
   displayVolumeUnit: VolumeUnit;
 }) {
   const [currentTime] = useState(() => Date.now());
@@ -98,6 +108,17 @@ export function Dashboard({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <div className="flex flex-col bg-background/40 p-3 sm:p-4">
+        {isUsingCachedActivity ? (
+          <p className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+            Offline · showing recent data
+            {lastSyncedAt
+              ? ` · Last synced ${new Date(lastSyncedAt).toLocaleString([], {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}`
+              : ""}
+          </p>
+        ) : null}
         <div className="rounded-lg border bg-muted/30 px-3 py-2">
           <p className="text-xs text-muted-foreground">Today's total</p>
           <p className="text-lg font-semibold text-foreground">
@@ -137,12 +158,19 @@ export function Dashboard({
           ) : null}
         </div>
         <div className="mt-3">
-          <WeeklyStats feeds={weeklyFeeds} displayVolumeUnit={displayVolumeUnit} />
+          <WeeklyStats
+            feeds={weeklyFeeds}
+            displayVolumeUnit={displayVolumeUnit}
+            isLoading={isLoadingWeeklyStats}
+            errorMessage={weeklyFeedError}
+          />
         </div>
         <div className="mt-3">
           <PumpingStats
             sessions={weeklyPumpingLogs}
             displayVolumeUnit={displayVolumeUnit}
+            isLoading={isLoadingWeeklyStats}
+            errorMessage={weeklyPumpingError}
           />
         </div>
         <p className="mt-4 text-sm font-medium text-foreground">Recent activity</p>

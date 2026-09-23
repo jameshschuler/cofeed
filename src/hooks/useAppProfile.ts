@@ -18,6 +18,9 @@ export function useAppProfile({
   setSuccessMessage,
 }: UseAppProfileOptions) {
   const [householdJoinCode, setHouseholdJoinCode] = useState<string | null>(null);
+  const [householdRole, setHouseholdRole] = useState<
+    "owner" | "caregiver" | "viewer" | null
+  >(null);
   const [profileName, setProfileName] = useState("");
   const [isSavingProfileName, setIsSavingProfileName] = useState(false);
 
@@ -28,8 +31,9 @@ export function useAppProfile({
 
     void getAccessToken()
       .then((accessToken) => getProfile({ data: { accessToken } }))
-      .then(({ joinCode, profileName: nextProfileName }) => {
+      .then(({ joinCode, memberRole, profileName: nextProfileName }) => {
         setHouseholdJoinCode(includeJoinCode ? (joinCode ?? null) : null);
+        setHouseholdRole(memberRole);
         setProfileName(nextProfileName);
       })
       .catch((error: unknown) => {
@@ -42,6 +46,7 @@ export function useAppProfile({
   useEffect(() => {
     if (!userId) {
       setHouseholdJoinCode(null);
+      setHouseholdRole(null);
       setProfileName("");
     }
   }, [userId]);
@@ -72,5 +77,11 @@ export function useAppProfile({
     }
   }
 
-  return { householdJoinCode, profileName, isSavingProfileName, saveProfileName };
+  return {
+    householdJoinCode,
+    householdRole,
+    profileName,
+    isSavingProfileName,
+    saveProfileName,
+  };
 }

@@ -15,8 +15,10 @@ import {
 import {
   createFeedRequestSchema,
   createPumpingRequestSchema,
+  updateBabyProfileRequestSchema,
   volumeUnitSchema,
 } from "../lib/api-contracts";
+import { getZonedDayStart, getZonedDaysAgoStart } from "../lib/timezone";
 
 const supabase = createClient(
   process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "",
@@ -97,6 +99,16 @@ export const getProfile = createServerFn({ method: "GET" })
         .returning({ id: babies.id });
     }
 
+    const [currentMembership] = await db
+      .select({ role: householdMembers.role })
+      .from(householdMembers)
+      .where(
+        and(
+          eq(householdMembers.householdId, householdId),
+          eq(householdMembers.userId, userId),
+        ),
+      )
+      .limit(1);
     const [household] = await db
       .select({ joinCode: households.joinCode })
       .from(households)
@@ -112,6 +124,7 @@ export const getProfile = createServerFn({ method: "GET" })
       householdId,
       babyId: baby.id,
       joinCode: household.joinCode,
+      memberRole: currentMembership?.role ?? "owner",
       profileName: profile?.profileName ?? profile?.email?.split("@")[0] ?? "Caregiver",
     };
   });
@@ -129,6 +142,51 @@ export const updateProfileName = createServerFn({ method: "POST" })
       })
       .returning({ profileName: userPreferences.profileName });
     return preferences.profileName ?? data.profileName.trim();
+  });
+
+export const getBabyProfile = createServerFn({ method: "GET" })
+  .validator(authenticated.extend({ babyId: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    const [baby] = await db
+      .select({
+        id: babies.id,
+        name: babies.name,
+        dateOfBirth: babies.dateOfBirth,
+        householdId: babies.householdId,
+        memberRole: householdMembers.role,
+      })
+      .from(babies)
+      .innerJoin(householdMembers, eq(householdMembers.householdId, babies.householdId))
+      .where(and(eq(babies.id, data.babyId), eq(householdMembers.userId, userId)))
+      .limit(1);
+    if (!baby) throw new Error("Forbidden.");
+    return baby;
+  });
+
+export const updateBabyProfile = createServerFn({ method: "POST" })
+  .validator(authenticated.extend(updateBabyProfileRequestSchema.shape))
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    const [owner] = await db
+      .select({ role: householdMembers.role })
+      .from(babies)
+      .innerJoin(householdMembers, eq(householdMembers.householdId, babies.householdId))
+      .where(and(eq(babies.id, data.babyId), eq(householdMembers.userId, userId)))
+      .limit(1);
+    if (owner?.role !== "owner")
+      throw new Error("Only household owners can update the baby profile.");
+
+    const [baby] = await db
+      .update(babies)
+      .set({
+        name: data.name.trim(),
+        dateOfBirth: data.dateOfBirth,
+        updatedAt: new Date(),
+      })
+      .where(eq(babies.id, data.babyId))
+      .returning({ id: babies.id, name: babies.name, dateOfBirth: babies.dateOfBirth });
+    return baby;
   });
 
 export const getPreferences = createServerFn({ method: "GET" })
@@ -199,6 +257,20 @@ export const leaveHousehold = createServerFn({ method: "POST" })
   .validator(authenticated.extend({ householdId: z.string().uuid() }))
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
+    const [membership] = await db
+      .select({ role: householdMembers.role })
+      .from(householdMembers)
+      .where(
+        and(
+          eq(householdMembers.householdId, data.householdId),
+          eq(householdMembers.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (!membership) throw new Error("Household membership not found.");
+    if (membership.role === "owner") {
+      throw new Error("Owners cannot leave their household.");
+    }
     await db
       .delete(householdMembers)
       .where(
@@ -210,11 +282,76 @@ export const leaveHousehold = createServerFn({ method: "POST" })
     return null;
   });
 
+export const listHouseholdMembers = createServerFn({ method: "GET" })
+  .validator(authenticated.extend({ householdId: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    const [viewer] = await db
+      .select({ role: householdMembers.role })
+      .from(householdMembers)
+      .where(
+        and(
+          eq(householdMembers.householdId, data.householdId),
+          eq(householdMembers.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (!viewer) throw new Error("Forbidden.");
+
+    return db
+      .select({
+        user_id: householdMembers.userId,
+        member_role: householdMembers.role,
+        email: authUsers.email,
+        profile_name: userPreferences.profileName,
+      })
+      .from(householdMembers)
+      .innerJoin(authUsers, eq(authUsers.id, householdMembers.userId))
+      .leftJoin(userPreferences, eq(userPreferences.userId, householdMembers.userId))
+      .where(eq(householdMembers.householdId, data.householdId));
+  });
+
+export const removeHouseholdMember = createServerFn({ method: "POST" })
+  .validator(
+    authenticated.extend({
+      householdId: z.string().uuid(),
+      memberUserId: z.string().uuid(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    const [owner] = await db
+      .select({ role: householdMembers.role })
+      .from(householdMembers)
+      .where(
+        and(
+          eq(householdMembers.householdId, data.householdId),
+          eq(householdMembers.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (owner?.role !== "owner")
+      throw new Error("Only household owners can remove members.");
+    if (data.memberUserId === userId)
+      throw new Error("Owners cannot remove themselves.");
+
+    await db
+      .delete(householdMembers)
+      .where(
+        and(
+          eq(householdMembers.householdId, data.householdId),
+          eq(householdMembers.userId, data.memberUserId),
+        ),
+      );
+    return null;
+  });
+
 export const listFeeds = createServerFn({ method: "GET" })
   .validator(
     authenticated.extend({
       babyId: z.string().uuid(),
       since: z.string().datetime().nullable(),
+      range: z.enum(["today", "week", "all"]).default("all"),
       limit: z.number().int().min(1).max(100).default(50),
     }),
   )
@@ -222,7 +359,21 @@ export const listFeeds = createServerFn({ method: "GET" })
     const userId = await authenticate(data.accessToken);
     await requireBabyMembership(data.babyId, userId);
     const conditions = [eq(feedLogs.babyId, data.babyId)];
-    if (data.since) conditions.push(gte(feedLogs.startedAt, new Date(data.since)));
+    const [household] = await db
+      .select({ timezone: households.timezone })
+      .from(babies)
+      .innerJoin(households, eq(households.id, babies.householdId))
+      .where(eq(babies.id, data.babyId))
+      .limit(1);
+    const since =
+      data.range === "today"
+        ? getZonedDayStart(new Date(), household.timezone)
+        : data.range === "week"
+          ? getZonedDaysAgoStart(new Date(), household.timezone, 6)
+          : data.since
+            ? new Date(data.since)
+            : null;
+    if (since) conditions.push(gte(feedLogs.startedAt, since));
     const feeds = await db
       .select({
         id: feedLogs.id,
@@ -294,6 +445,7 @@ export const listPumpingLogs = createServerFn({ method: "GET" })
     authenticated.extend({
       babyId: z.string().uuid(),
       since: z.string().datetime().nullable(),
+      range: z.enum(["today", "week", "all"]).default("all"),
       limit: z.number().int().min(1).max(100).default(50),
     }),
   )
@@ -301,7 +453,21 @@ export const listPumpingLogs = createServerFn({ method: "GET" })
     const userId = await authenticate(data.accessToken);
     await requireBabyMembership(data.babyId, userId);
     const conditions = [eq(pumpingLogs.babyId, data.babyId)];
-    if (data.since) conditions.push(gte(pumpingLogs.startedAt, new Date(data.since)));
+    const [household] = await db
+      .select({ timezone: households.timezone })
+      .from(babies)
+      .innerJoin(households, eq(households.id, babies.householdId))
+      .where(eq(babies.id, data.babyId))
+      .limit(1);
+    const since =
+      data.range === "today"
+        ? getZonedDayStart(new Date(), household.timezone)
+        : data.range === "week"
+          ? getZonedDaysAgoStart(new Date(), household.timezone, 6)
+          : data.since
+            ? new Date(data.since)
+            : null;
+    if (since) conditions.push(gte(pumpingLogs.startedAt, since));
     const sessions = await db
       .select({
         id: pumpingLogs.id,

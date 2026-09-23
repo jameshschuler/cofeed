@@ -1,19 +1,30 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { HouseholdMembership } from "../hooks/useHouseholds";
+import type {
+  BabyProfile,
+  HouseholdMember,
+  HouseholdMembership,
+} from "../hooks/useHouseholds";
 
 export type HouseholdState = {
   joinCode: string;
   isJoiningHousehold: boolean;
   householdJoinCode: string | null;
+  householdRole: "owner" | "caregiver" | "viewer" | null;
   households: HouseholdMembership[];
   isLoadingHouseholds: boolean;
   leavingHouseholdId: string | null;
+  membersByHousehold: Record<string, HouseholdMember[]>;
+  removingMemberKey: string | null;
+  babyProfile: BabyProfile | null;
+  isSavingBabyProfile: boolean;
 };
 
 export type HouseholdActions = {
   onJoinCodeChange: (value: string) => void;
   onJoinHousehold: () => void;
   onLeaveHousehold: (householdId: string) => void;
+  onRemoveMember: (householdId: string, memberUserId: string) => void;
+  onSaveBabyProfile: (name: string, dateOfBirth: string) => void;
   onCopyHouseholdCode: () => void;
 };
 

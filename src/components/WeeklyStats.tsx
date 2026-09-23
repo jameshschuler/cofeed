@@ -59,9 +59,13 @@ function getCssVar(name: string) {
 export function WeeklyStats({
   feeds,
   displayVolumeUnit,
+  isLoading = false,
+  errorMessage = null,
 }: {
   feeds: FeedLogItem[];
   displayVolumeUnit: VolumeUnit;
+  isLoading?: boolean;
+  errorMessage?: string | null;
 }) {
   const [metric, setMetric] = useState<Metric>("total");
   const [chartType, setChartType] = useState<ChartType>("line");
@@ -148,54 +152,64 @@ export function WeeklyStats({
 
   return (
     <div className="rounded-lg border bg-muted/30 px-3 py-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">Last 7 days</p>
-        <div className="flex items-center gap-2">
-          <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-            <Button
-              type="button"
-              size="icon-sm"
-              variant={chartType === "line" ? "default" : "ghost"}
-              title="Line chart"
-              aria-label="Line chart"
-              onClick={() => setChartType("line")}
-            >
-              <LineChart className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              size="icon-sm"
-              variant={chartType === "bar" ? "default" : "ghost"}
-              title="Bar chart"
-              aria-label="Bar chart"
-              onClick={() => setChartType("bar")}
-            >
-              <BarChart3 className="size-4" />
-            </Button>
+      {isLoading ? (
+        <p className="text-xs text-muted-foreground">Loading feed stats...</p>
+      ) : errorMessage ? (
+        <p className="text-xs text-destructive">{errorMessage}</p>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">Feeds · last 7 days</p>
+            <div className="flex items-center gap-2">
+              <div className="grid grid-cols-2 overflow-hidden rounded-lg bg-muted">
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant={chartType === "line" ? "default" : "ghost"}
+                  className="rounded-none"
+                  title="Line chart"
+                  aria-label="Line chart"
+                  onClick={() => setChartType("line")}
+                >
+                  <LineChart className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant={chartType === "bar" ? "default" : "ghost"}
+                  className="rounded-none"
+                  title="Bar chart"
+                  aria-label="Bar chart"
+                  onClick={() => setChartType("bar")}
+                >
+                  <BarChart3 className="size-4" />
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div className="mt-2 grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
-        {(Object.keys(METRIC_LABELS) as Metric[]).map((key) => (
-          <Button
-            key={key}
-            type="button"
-            size="sm"
-            variant={metric === key ? "default" : "ghost"}
-            className="h-7 px-2 text-xs"
-            onClick={() => setMetric(key)}
-          >
-            {METRIC_LABELS[key]}
-          </Button>
-        ))}
-      </div>
-      <div className="mt-3 h-40">
-        {chartType === "line" ? (
-          <Line data={data} options={options as ChartOptions<"line">} />
-        ) : (
-          <Bar data={data} options={options as ChartOptions<"bar">} />
-        )}
-      </div>
+          <div className="mt-2 grid grid-cols-3 overflow-hidden rounded-lg bg-muted">
+            {(Object.keys(METRIC_LABELS) as Metric[]).map((key) => (
+              <Button
+                key={key}
+                type="button"
+                size="sm"
+                variant={metric === key ? "default" : "ghost"}
+                className="h-8 rounded-none px-2 text-xs"
+                onClick={() => setMetric(key)}
+              >
+                {METRIC_LABELS[key]}
+              </Button>
+            ))}
+          </div>
+          <div className="mt-3 h-40">
+            {chartType === "line" ? (
+              <Line data={data} options={options as ChartOptions<"line">} />
+            ) : (
+              <Bar data={data} options={options as ChartOptions<"bar">} />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

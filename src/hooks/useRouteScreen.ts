@@ -73,6 +73,7 @@ export function useRouteScreen(screen: Screen) {
     isSavingPreferences: preferences.isSavingPreferences,
     handleDisplayVolumeUnitChange: preferences.updateDisplayVolumeUnit,
     householdJoinCode: profile.householdJoinCode,
+    householdRole: profile.householdRole,
     profileName: profile.profileName,
     isSavingProfileName: profile.isSavingProfileName,
     handleSaveProfileName: profile.saveProfileName,
