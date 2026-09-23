@@ -6,5 +6,6 @@ dist
 PRODUCT_SPEC.md
 .tanstack/
 coverage
+test-results
 *.log
 .DS_Store

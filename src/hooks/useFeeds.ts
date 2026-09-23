@@ -24,6 +24,10 @@ function getLocalDateTimeValue(date = new Date()) {
   return new Date(date.getTime() - tzOffsetMs).toISOString().slice(0, 16);
 }
 
+function getLocalDateValue(date = new Date()) {
+  return getLocalDateTimeValue(date).slice(0, 10);
+}
+
 type UseFeedsOptions = {
   screen: Screen;
   session: Session | null;
@@ -48,10 +52,12 @@ export function useFeeds({
   setSuccessMessage,
 }: UseFeedsOptions) {
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("today");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const feedData = useFeedData({
     screen,
     session,
     feedFilter,
+    selectedDate,
     setErrorMessage,
   });
   const [isSavingFeed, setIsSavingFeed] = useState(false);
@@ -374,6 +380,7 @@ export function useFeeds({
     },
     list: {
       filter: feedFilter,
+      selectedDate,
       isLoading: feedData.isLoadingFeeds,
       logs: feedData.feedLogs,
       loadError: feedData.feedsLoadError,
@@ -401,7 +408,15 @@ export function useFeeds({
     onSubmitPumping: (e) => {
       return handleAddPumping(e);
     },
-    onFeedFilterChange: setFeedFilter,
+    onFeedFilterChange: (filter) => {
+      setFeedFilter(filter);
+      if (filter === "date") {
+        setSelectedDate((current) => current ?? getLocalDateValue());
+      } else {
+        setSelectedDate(null);
+      }
+    },
+    onFeedDateChange: setSelectedDate,
     onStartEditFeed: handleStartEditFeed,
     onDeleteFeed: (feedId) => {
       void handleDeleteFeed(feedId);

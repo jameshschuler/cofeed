@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getAccessToken } from "../lib/auth-token";
 import {
@@ -19,6 +19,7 @@ type UseFeedDataOptions = {
   screen: Screen;
   session: Session | null;
   feedFilter: FeedFilter;
+  selectedDate: string | null;
   setErrorMessage: (value: string | null) => void;
 };
 
@@ -26,6 +27,7 @@ export function useFeedData({
   screen,
   session,
   feedFilter,
+  selectedDate,
   setErrorMessage,
 }: UseFeedDataOptions) {
   const [feedLogs, setFeedLogs] = useState<FeedLogItem[]>([]);
@@ -37,6 +39,9 @@ export function useFeedData({
   const [feedsLoadError, setFeedsLoadError] = useState<string | null>(null);
   const [isUsingCachedActivity, setIsUsingCachedActivity] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const feedRequestIdRef = useRef(0);
+  const pumpingRequestIdRef = useRef(0);
+  const loadRequestIdRef = useRef(0);
 
   function getCachedActivity(babyId: string) {
     const userId = session?.user?.id;
@@ -68,20 +73,28 @@ export function useFeedData({
   const [weeklyFeedError, setWeeklyFeedError] = useState<string | null>(null);
   const [weeklyPumpingError, setWeeklyPumpingError] = useState<string | null>(null);
 
-  async function refreshFeedLogs(babyId: string, filter: FeedFilter = feedFilter) {
+  async function refreshFeedLogs(
+    babyId: string,
+    filter: FeedFilter = feedFilter,
+    date: string | null = selectedDate,
+  ) {
+    const requestId = ++feedRequestIdRef.current;
     try {
       const feedData = await listFeeds({
         data: {
           accessToken: await getAccessToken(),
           babyId,
           since: null,
-          range: filter === "today" ? "today" : "all",
+          range: filter === "date" ? "date" : filter,
+          date: filter === "date" ? date : null,
           limit: 50,
         },
       });
+      if (feedRequestIdRef.current !== requestId) return;
       setFeedLogs(feedData);
       saveCachedActivity(babyId, { feeds: feedData });
     } catch (error) {
+      if (feedRequestIdRef.current !== requestId) return;
       const cached = getCachedActivity(babyId);
       if (cached) {
         setFeedLogs(cached.feeds);
@@ -94,20 +107,28 @@ export function useFeedData({
     }
   }
 
-  async function refreshPumpingLogs(babyId: string, filter: FeedFilter = feedFilter) {
+  async function refreshPumpingLogs(
+    babyId: string,
+    filter: FeedFilter = feedFilter,
+    date: string | null = selectedDate,
+  ) {
+    const requestId = ++pumpingRequestIdRef.current;
     try {
       const pumpingData = await listPumpingLogs({
         data: {
           accessToken: await getAccessToken(),
           babyId,
           since: null,
-          range: filter === "today" ? "today" : "all",
+          range: filter === "date" ? "date" : filter,
+          date: filter === "date" ? date : null,
           limit: 100,
         },
       });
+      if (pumpingRequestIdRef.current !== requestId) return;
       setPumpingLogs(pumpingData);
       saveCachedActivity(babyId, { pumpingLogs: pumpingData });
     } catch (error) {
+      if (pumpingRequestIdRef.current !== requestId) return;
       const cached = getCachedActivity(babyId);
       if (cached) {
         setPumpingLogs(cached.pumpingLogs);
@@ -128,6 +149,7 @@ export function useFeedData({
     }
 
     async function loadActivity() {
+      const loadRequestId = ++loadRequestIdRef.current;
       setIsLoadingFeeds(true);
       setFeedsLoadError(null);
 
@@ -135,10 +157,19 @@ export function useFeedData({
         const { babyId } = await getProfile({
           data: { accessToken: await getAccessToken() },
         });
-        if (session.user?.id) writeLastBabyId(session.user.id, babyId);
+        if (session?.user?.id) writeLastBabyId(session.user.id, babyId);
         setActiveBabyId(babyId);
-        await refreshFeedLogs(babyId, screen === "dashboard" ? "today" : feedFilter);
-        await refreshPumpingLogs(babyId, screen === "dashboard" ? "today" : feedFilter);
+        const dateForScreen = screen === "dashboard" ? null : selectedDate;
+        await refreshFeedLogs(
+          babyId,
+          screen === "dashboard" ? "today" : feedFilter,
+          dateForScreen,
+        );
+        await refreshPumpingLogs(
+          babyId,
+          screen === "dashboard" ? "today" : feedFilter,
+          dateForScreen,
+        );
 
         if (screen === "dashboard") {
           setIsLoadingWeeklyStats(true);
@@ -192,7 +223,7 @@ export function useFeedData({
           setIsLoadingWeeklyStats(false);
         }
       } catch (error) {
-        const cachedBabyId = session.user?.id ? readLastBabyId(session.user.id) : null;
+        const cachedBabyId = session?.user?.id ? readLastBabyId(session.user.id) : null;
         const cached = cachedBabyId ? getCachedActivity(cachedBabyId) : null;
         if (cachedBabyId && cached) {
           setActiveBabyId(cachedBabyId);
@@ -213,12 +244,12 @@ export function useFeedData({
           error instanceof Error ? error.message : "Unable to load activity.",
         );
       } finally {
-        setIsLoadingFeeds(false);
+        if (loadRequestIdRef.current === loadRequestId) setIsLoadingFeeds(false);
       }
     }
 
     void loadActivity();
-  }, [screen, session, feedFilter]);
+  }, [screen, session, feedFilter, selectedDate]);
 
   return {
     feedLogs,

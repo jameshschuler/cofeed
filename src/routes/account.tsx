@@ -29,6 +29,11 @@ function AccountPage() {
     isDarkMode,
     handleToggleDarkMode,
     handleExportData,
+    isImporting,
+    importProgress,
+    importResultMessage,
+    handleImportFileChange,
+    handleOpenImport,
   } = useRouteScreen("account");
 
   if (!isAuthReady || !isPreferencesReady) {
@@ -60,6 +65,9 @@ function AccountPage() {
               isPreferencesReady,
               isSavingPreferences,
               isDarkMode,
+              isImporting,
+              importProgress,
+              importResultMessage,
             } satisfies AccountState
           }
           actions={
@@ -70,6 +78,8 @@ function AccountPage() {
                 void handleDisplayVolumeUnitChange(value),
               onToggleDarkMode: handleToggleDarkMode,
               onExportData: () => void handleExportData(),
+              onImportFileChange: handleImportFileChange,
+              onOpenImport: handleOpenImport,
             } satisfies AccountActions
           }
         >

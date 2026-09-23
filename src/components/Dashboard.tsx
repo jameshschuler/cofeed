@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Milk } from "lucide-react";
 import type { FeedLogItem, PumpingLogItem, VolumeUnit } from "../types/route-types";
 import { EmptyState } from "./ui/empty-state";
+import { SourceBadge } from "./ui/badge";
 import { PumpingStats } from "./PumpingStats";
 import { WeeklyStats } from "./WeeklyStats";
 
@@ -202,6 +203,7 @@ export function Dashboard({
                       {activity.session.household_name} ·{" "}
                       {activity.session.logger_name ?? "Unknown caregiver"}
                     </p>
+                    <SourceBadge source={activity.session.source} />
                   </div>
                 );
               }
@@ -234,6 +236,7 @@ export function Dashboard({
                     <p className="text-xs text-muted-foreground">
                       {feed.household_name} · {feed.logger_name ?? "Unknown caregiver"}
                     </p>
+                    <SourceBadge source={feed.source} />
                   </div>
                   <div className="space-y-1">
                     {hasFormula ? (

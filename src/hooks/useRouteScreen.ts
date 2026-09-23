@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAppProfile } from "./useAppProfile";
 import { useClipboard } from "./useClipboard";
 import { useDataExport } from "./useDataExport";
+import { useDataImport } from "./useDataImport";
 import { useFeeds } from "./useFeeds";
 import { useHouseholds } from "./useHouseholds";
 import { useRouteAuth } from "./useRouteAuth";
@@ -62,6 +63,11 @@ export function useRouteScreen(screen: Screen) {
     setErrorMessage: auth.setErrorMessage,
     setSuccessMessage: auth.setSuccessMessage,
   });
+  const dataImport = useDataImport({
+    userId,
+    setErrorMessage: auth.setErrorMessage,
+    setSuccessMessage: auth.setSuccessMessage,
+  });
   const feeds = useFeeds({
     screen,
     session: auth.session,
@@ -91,5 +97,10 @@ export function useRouteScreen(screen: Screen) {
       }
     },
     handleExportData: dataExport.exportData,
+    isImporting: dataImport.isImporting,
+    importProgress: dataImport.importProgress,
+    importResultMessage: dataImport.importResultMessage,
+    handleImportFileChange: dataImport.handleFileChange,
+    handleOpenImport: dataImport.openFilePicker,
   };
 }

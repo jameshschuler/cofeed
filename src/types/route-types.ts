@@ -1,5 +1,7 @@
 export type VolumeUnit = "oz" | "ml";
 
+export type ActivitySource = "cofeed" | "nara";
+
 export type FeedLogItem = {
   id: string;
   started_at: string;
@@ -8,11 +10,12 @@ export type FeedLogItem = {
   formula_portion_unit: VolumeUnit | null;
   breast_milk_portion_volume: number | null;
   breast_milk_portion_unit: VolumeUnit | null;
+  source: ActivitySource;
   household_name: string;
   logger_name: string | null;
 };
 
-export type FeedFilter = "today" | "all";
+export type FeedFilter = "today" | "yesterday" | "date";
 
 export type PumpingLogItem = {
   id: string;
@@ -20,6 +23,7 @@ export type PumpingLogItem = {
   created_at: string;
   volume: number;
   unit: VolumeUnit;
+  source: ActivitySource;
   household_name: string;
   logger_name: string | null;
 };

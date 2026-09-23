@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type ChangeEvent, type ReactNode } from "react";
 import type { VolumeUnit } from "../types/route-types";
 
 export type AccountState = {
@@ -8,6 +8,9 @@ export type AccountState = {
   isPreferencesReady: boolean;
   isSavingPreferences: boolean;
   isDarkMode: boolean;
+  isImporting: boolean;
+  importProgress: { processed: number; total: number } | null;
+  importResultMessage: string | null;
 };
 
 export type AccountActions = {
@@ -16,6 +19,8 @@ export type AccountActions = {
   onDisplayVolumeUnitChange: (value: VolumeUnit) => void;
   onToggleDarkMode: () => void;
   onExportData: () => void;
+  onImportFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onOpenImport: () => void;
 };
 
 type AccountContextValue = {

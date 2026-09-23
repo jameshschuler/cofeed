@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const volumeUnitSchema = z.enum(["oz", "ml"]);
+export const activitySourceSchema = z.enum(["cofeed", "nara"]);
 
 export const createFeedRequestSchema = z.object({
   babyId: z.string().uuid(),
@@ -9,6 +10,7 @@ export const createFeedRequestSchema = z.object({
   formulaPortionUnit: volumeUnitSchema.nullable().default(null),
   breastMilkPortionVolume: z.number().nonnegative().nullable().default(null),
   breastMilkPortionUnit: volumeUnitSchema.nullable().default(null),
+  source: activitySourceSchema.default("cofeed"),
   idempotencyKey: z.string().uuid(),
 });
 
@@ -17,6 +19,7 @@ export const createPumpingRequestSchema = z.object({
   startedAt: z.string().datetime(),
   volume: z.number().positive(),
   unit: volumeUnitSchema,
+  source: activitySourceSchema.default("cofeed"),
   idempotencyKey: z.string().uuid(),
 });
 
@@ -39,6 +42,7 @@ export const feedResponseSchema = z.object({
   formulaPortionUnit: volumeUnitSchema.nullable(),
   breastMilkPortionVolume: z.number().nullable(),
   breastMilkPortionUnit: volumeUnitSchema.nullable(),
+  source: activitySourceSchema,
   createdByUserId: z.string().uuid(),
   createdAt: z.string().datetime(),
   serverReceivedAt: z.string().datetime(),
@@ -47,7 +51,8 @@ export const feedResponseSchema = z.object({
 export const listFeedsRequestSchema = z.object({
   babyId: z.string().uuid(),
   since: z.string().datetime().nullable().optional(),
-  range: z.enum(["today", "week", "all"]).default("all"),
+  range: z.enum(["today", "week", "all", "date", "yesterday"]).default("all"),
+  date: z.string().date().nullable().optional(),
   limit: z.number().int().min(1).max(100).default(50),
 });
 

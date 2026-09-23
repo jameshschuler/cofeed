@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client";
 import {
@@ -56,6 +56,38 @@ async function requireBabyMembership(babyId: string, userId: string) {
   if (!membership) {
     throw new Error("Forbidden.");
   }
+}
+
+function getRangeBounds(
+  range: "today" | "week" | "all" | "date" | "yesterday",
+  date: string | null | undefined,
+  since: string | null | undefined,
+  timezone: string,
+) {
+  const now = new Date();
+  if (range === "today") {
+    return { since: getZonedDayStart(now, timezone), until: null as Date | null };
+  }
+  if (range === "yesterday") {
+    return {
+      since: getZonedDaysAgoStart(now, timezone, 1),
+      until: getZonedDayStart(now, timezone),
+    };
+  }
+  if (range === "week") {
+    return {
+      since: getZonedDaysAgoStart(now, timezone, 6),
+      until: null as Date | null,
+    };
+  }
+  if (range === "date" && date) {
+    const anchor = new Date(`${date}T12:00:00`);
+    return {
+      since: getZonedDayStart(anchor, timezone),
+      until: getZonedDaysAgoStart(anchor, timezone, -1),
+    };
+  }
+  return { since: since ? new Date(since) : null, until: null as Date | null };
 }
 
 export const getProfile = createServerFn({ method: "GET" })
@@ -351,7 +383,8 @@ export const listFeeds = createServerFn({ method: "GET" })
     authenticated.extend({
       babyId: z.string().uuid(),
       since: z.string().datetime().nullable(),
-      range: z.enum(["today", "week", "all"]).default("all"),
+      range: z.enum(["today", "week", "all", "date", "yesterday"]).default("all"),
+      date: z.string().date().nullable().optional(),
       limit: z.number().int().min(1).max(100).default(50),
     }),
   )
@@ -365,15 +398,14 @@ export const listFeeds = createServerFn({ method: "GET" })
       .innerJoin(households, eq(households.id, babies.householdId))
       .where(eq(babies.id, data.babyId))
       .limit(1);
-    const since =
-      data.range === "today"
-        ? getZonedDayStart(new Date(), household.timezone)
-        : data.range === "week"
-          ? getZonedDaysAgoStart(new Date(), household.timezone, 6)
-          : data.since
-            ? new Date(data.since)
-            : null;
+    const { since, until } = getRangeBounds(
+      data.range,
+      data.date,
+      data.since,
+      household.timezone,
+    );
     if (since) conditions.push(gte(feedLogs.startedAt, since));
+    if (until) conditions.push(lt(feedLogs.startedAt, until));
     const feeds = await db
       .select({
         id: feedLogs.id,
@@ -383,6 +415,7 @@ export const listFeeds = createServerFn({ method: "GET" })
         formula_portion_unit: feedLogs.formulaPortionUnit,
         breast_milk_portion_volume: feedLogs.breastMilkPortionVolume,
         breast_milk_portion_unit: feedLogs.breastMilkPortionUnit,
+        source: feedLogs.source,
         household_name: households.name,
         logger_email: authUsers.email,
         profile_name: userPreferences.profileName,
@@ -433,6 +466,7 @@ export const createFeed = createServerFn({ method: "POST" })
         formulaPortionUnit: data.formulaPortionUnit,
         breastMilkPortionVolume: data.breastMilkPortionVolume,
         breastMilkPortionUnit: data.breastMilkPortionUnit,
+        source: data.source,
         idempotencyKey: data.idempotencyKey,
         createdByUserId: userId,
       })
@@ -445,7 +479,8 @@ export const listPumpingLogs = createServerFn({ method: "GET" })
     authenticated.extend({
       babyId: z.string().uuid(),
       since: z.string().datetime().nullable(),
-      range: z.enum(["today", "week", "all"]).default("all"),
+      range: z.enum(["today", "week", "all", "date", "yesterday"]).default("all"),
+      date: z.string().date().nullable().optional(),
       limit: z.number().int().min(1).max(100).default(50),
     }),
   )
@@ -459,15 +494,14 @@ export const listPumpingLogs = createServerFn({ method: "GET" })
       .innerJoin(households, eq(households.id, babies.householdId))
       .where(eq(babies.id, data.babyId))
       .limit(1);
-    const since =
-      data.range === "today"
-        ? getZonedDayStart(new Date(), household.timezone)
-        : data.range === "week"
-          ? getZonedDaysAgoStart(new Date(), household.timezone, 6)
-          : data.since
-            ? new Date(data.since)
-            : null;
+    const { since, until } = getRangeBounds(
+      data.range,
+      data.date,
+      data.since,
+      household.timezone,
+    );
     if (since) conditions.push(gte(pumpingLogs.startedAt, since));
+    if (until) conditions.push(lt(pumpingLogs.startedAt, until));
     const sessions = await db
       .select({
         id: pumpingLogs.id,
@@ -475,6 +509,7 @@ export const listPumpingLogs = createServerFn({ method: "GET" })
         created_at: pumpingLogs.createdAt,
         volume: pumpingLogs.volume,
         unit: pumpingLogs.unit,
+        source: pumpingLogs.source,
         household_name: households.name,
         logger_email: authUsers.email,
         profile_name: userPreferences.profileName,
@@ -526,6 +561,7 @@ export const createPumpingLog = createServerFn({ method: "POST" })
         startedAt: new Date(data.startedAt),
         volume: data.volume,
         unit: data.unit,
+        source: data.source,
         idempotencyKey: data.idempotencyKey,
         createdByUserId: userId,
       })

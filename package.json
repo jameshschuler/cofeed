@@ -8,6 +8,7 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:smoke": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:reset": "tsx src/db/scripts/reset-cofeed-data.ts",
@@ -48,6 +49,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@tanstack/router-plugin": "^1.168.22",
     "@types/node": "latest",
     "@types/react": "latest",

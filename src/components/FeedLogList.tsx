@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Milk, Pencil, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { SourceBadge } from "./ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { EmptyState } from "./ui/empty-state";
 import { EditBottleDialog } from "./EditBottleDialog";
@@ -19,6 +21,7 @@ export type FeedsState = {
   };
   list: {
     filter: FeedFilter;
+    selectedDate: string | null;
     isLoading: boolean;
     logs: FeedLogItem[];
     loadError: string | null;
@@ -43,6 +46,7 @@ export type FeedsActions = {
   onSubmitNewFeed: (e: FormEvent<HTMLFormElement>) => Promise<boolean>;
   onSubmitPumping: (e: FormEvent<HTMLFormElement>) => Promise<boolean>;
   onFeedFilterChange: (filter: FeedFilter) => void;
+  onFeedDateChange: (date: string | null) => void;
   onStartEditFeed: (feed: FeedLogItem) => void;
   onDeleteFeed: (feedId: string) => void;
   onEditStartedAtChange: (value: string) => void;
@@ -92,8 +96,8 @@ export function FeedLogList({
     <div className="flex min-h-[24rem] flex-none flex-col rounded-xl border bg-background/70 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground">Recent feeds</p>
-        <div className="flex items-center gap-2">
-          <div className="grid grid-cols-2 overflow-hidden rounded-lg bg-muted">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-3 overflow-hidden rounded-lg bg-muted">
             <Button
               type="button"
               size="sm"
@@ -106,13 +110,30 @@ export function FeedLogList({
             <Button
               type="button"
               size="sm"
-              variant={state.list.filter === "all" ? "default" : "ghost"}
+              variant={state.list.filter === "yesterday" ? "default" : "ghost"}
               className="h-8 rounded-none"
-              onClick={() => actions.onFeedFilterChange("all")}
+              onClick={() => actions.onFeedFilterChange("yesterday")}
             >
-              All
+              Yesterday
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={state.list.filter === "date" ? "default" : "ghost"}
+              className="h-8 rounded-none"
+              onClick={() => actions.onFeedFilterChange("date")}
+            >
+              Date
             </Button>
           </div>
+          {state.list.filter === "date" ? (
+            <Input
+              type="date"
+              className="h-8 w-auto text-xs"
+              value={state.list.selectedDate ?? ""}
+              onChange={(e) => actions.onFeedDateChange(e.target.value || null)}
+            />
+          ) : null}
           <div className="flex items-center rounded-lg border border-border/70 px-3 py-1.5">
             <span className="text-xs text-muted-foreground">
               Display: {preferredDisplayVolumeUnit}
@@ -121,7 +142,23 @@ export function FeedLogList({
         </div>
       </div>
       {state.list.isLoading ? (
-        <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+        <div className="mt-2 space-y-6 pr-1">
+          <span className="sr-only">Loading feeds…</span>
+          {Array.from({ length: 2 }).map((_, groupIndex) => (
+            <section
+              key={groupIndex}
+              aria-hidden="true"
+              className="animate-pulse space-y-3"
+            >
+              <div className="h-14 rounded-lg border bg-muted/30" />
+              <div className="space-y-2">
+                {Array.from({ length: 2 }).map((__, cardIndex) => (
+                  <div key={cardIndex} className="h-20 rounded-lg border bg-muted/20" />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       ) : state.list.logs.length > 0 ? (
         <div className="mt-2 space-y-6 pr-1">
           {groupedFeeds.map((group) => (
@@ -224,6 +261,9 @@ export function FeedLogList({
                         </Button>
                       </div>
                     </div>
+                    <div className="mt-2 flex justify-end">
+                      <SourceBadge source={feed.source} />
+                    </div>
                   </div>
                 );
               })}
@@ -235,6 +275,7 @@ export function FeedLogList({
           icon={Milk}
           title="No feeds logged yet"
           description="Bottles you log will show up here."
+          className="mt-2"
         />
       )}
       <EditBottleDialog state={state} actions={actions} />

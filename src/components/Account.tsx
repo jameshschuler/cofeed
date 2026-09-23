@@ -127,6 +127,32 @@ export function Account() {
             <FileDown className="size-4" />
             Export activity
           </Button>
+          <input
+            id="nara-import-input"
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={actions.onImportFileChange}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-2 w-full"
+            disabled={state.isImporting}
+            onClick={actions.onOpenImport}
+          >
+            <Download className="size-4" />
+            {state.isImporting
+              ? state.importProgress
+                ? `Importing ${state.importProgress.processed}/${state.importProgress.total}`
+                : "Importing"
+              : "Import Nara Data"}
+          </Button>
+          {!state.isImporting && state.importResultMessage ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {state.importResultMessage}
+            </p>
+          ) : null}
         </section>
 
         {!isInstalled && (canInstall || showIosInstructions) ? (

@@ -68,6 +68,7 @@ export const feedLogs = cofeed.table("feed_logs", {
   formulaPortionUnit: volumeUnitEnum("formula_portion_unit"),
   breastMilkPortionVolume: real("breast_milk_portion_volume"),
   breastMilkPortionUnit: volumeUnitEnum("breast_milk_portion_unit"),
+  source: text("source").notNull().default("cofeed"),
   idempotencyKey: text("idempotency_key").notNull().unique(),
   createdByUserId: uuid("created_by_user_id")
     .notNull()
@@ -87,6 +88,7 @@ export const pumpingLogs = cofeed.table("pumping_logs", {
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   volume: real("volume").notNull(),
   unit: volumeUnitEnum("unit").notNull(),
+  source: text("source").notNull().default("cofeed"),
   idempotencyKey: text("idempotency_key").notNull().unique(),
   createdByUserId: uuid("created_by_user_id")
     .notNull()
