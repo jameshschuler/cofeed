@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Download, LogOut, Moon, Sun } from "lucide-react";
+import { Check, Download, FileDown, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -113,6 +113,19 @@ export function Account() {
               <Moon className="size-4" />
             )}
             {state.isDarkMode ? "Use light mode" : "Use dark mode"}
+          </Button>
+        </section>
+
+        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
+          <p className="text-sm font-medium text-foreground">Your data</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3 w-full"
+            onClick={actions.onExportData}
+          >
+            <FileDown className="size-4" />
+            Export activity
           </Button>
         </section>
 

@@ -7,6 +7,8 @@ const tables = [
   "households",
   "household_members",
   "babies",
+  "weight_entries",
+  "daily_intake_goals",
   "feed_logs",
   "pumping_logs",
   "user_preferences",
@@ -26,9 +28,9 @@ async function run() {
     );
   }
 
-  // Keep RLS disabled until table policies are implemented.
+  // Policies are installed by the RLS migration; preserve enforcement here.
   for (const table of tables) {
-    await db.execute(sql.raw(`ALTER TABLE cofeed.${table} DISABLE ROW LEVEL SECURITY`));
+    await db.execute(sql.raw(`ALTER TABLE cofeed.${table} ENABLE ROW LEVEL SECURITY`));
   }
 
   // Reload PostgREST config

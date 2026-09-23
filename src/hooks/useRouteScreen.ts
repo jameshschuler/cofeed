@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useAppProfile } from "./useAppProfile";
 import { useClipboard } from "./useClipboard";
+import { useDataExport } from "./useDataExport";
 import { useFeeds } from "./useFeeds";
 import { useHouseholds } from "./useHouseholds";
 import { useRouteAuth } from "./useRouteAuth";
@@ -56,6 +57,11 @@ export function useRouteScreen(screen: Screen) {
     setErrorMessage: auth.setErrorMessage,
     setSuccessMessage: auth.setSuccessMessage,
   });
+  const dataExport = useDataExport({
+    userId,
+    setErrorMessage: auth.setErrorMessage,
+    setSuccessMessage: auth.setSuccessMessage,
+  });
   const feeds = useFeeds({
     screen,
     session: auth.session,
@@ -84,5 +90,6 @@ export function useRouteScreen(screen: Screen) {
         clipboard.copy(profile.householdJoinCode, "Household code copied.");
       }
     },
+    handleExportData: dataExport.exportData,
   };
 }

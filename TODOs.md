@@ -16,7 +16,6 @@ A practical execution checklist for building the app from the current codebase s
 - [x] Create `drizzle.config.ts`
 - [x] Generate initial migration from `src/server/db/schema.ts`
 - [x] Apply migration to local Postgres/Supabase
-- [x] Add `src/server/db/rls/policies.sql` with household-scoped RLS policies
 - [x] Add seed script `src/server/db/seeds/dev-seed.ts` for demo household, baby, and sample logs
 - [x] Add FK bridge from `cofeed` user fields to `auth.users(id)`
 - [x] Verify `feed_logs.idempotency_key` is `UNIQUE`

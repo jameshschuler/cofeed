@@ -28,6 +28,7 @@ function AccountPage() {
     handleDisplayVolumeUnitChange,
     isDarkMode,
     handleToggleDarkMode,
+    handleExportData,
   } = useRouteScreen("account");
 
   if (!isAuthReady || !isPreferencesReady) {
@@ -68,6 +69,7 @@ function AccountPage() {
               onDisplayVolumeUnitChange: (value) =>
                 void handleDisplayVolumeUnitChange(value),
               onToggleDarkMode: handleToggleDarkMode,
+              onExportData: () => void handleExportData(),
             } satisfies AccountActions
           }
         >

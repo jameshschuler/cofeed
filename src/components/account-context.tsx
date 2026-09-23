@@ -15,6 +15,7 @@ export type AccountActions = {
   onSaveProfileName: (value: string) => void;
   onDisplayVolumeUnitChange: (value: VolumeUnit) => void;
   onToggleDarkMode: () => void;
+  onExportData: () => void;
 };
 
 type AccountContextValue = {
