@@ -5,7 +5,13 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "drizzle/meta/**", "src/routeTree.gen.ts"],
+    ignores: [
+      "dist/**",
+      ".output/**",
+      "node_modules/**",
+      "drizzle/meta/**",
+      "src/routeTree.gen.ts",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -25,6 +31,15 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "off",
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/exhaustive-deps": "off",
+    },
+  },
+  {
+    files: ["**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
   },
 );

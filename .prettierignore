@@ -1,5 +1,6 @@
 node_modules
 dist
+.output
 .tanstack
 drizzle/meta
 src/routeTree.gen.ts
