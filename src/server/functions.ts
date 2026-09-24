@@ -58,6 +58,19 @@ async function requireBabyMembership(babyId: string, userId: string) {
   }
 }
 
+async function requireBabyWriteAccess(babyId: string, userId: string) {
+  const [membership] = await db
+    .select({ role: householdMembers.role })
+    .from(babies)
+    .innerJoin(householdMembers, eq(householdMembers.householdId, babies.householdId))
+    .where(and(eq(babies.id, babyId), eq(householdMembers.userId, userId)))
+    .limit(1);
+
+  if (!membership || membership.role === "viewer") {
+    throw new Error("Forbidden.");
+  }
+}
+
 function getRangeBounds(
   range: "today" | "week" | "all" | "date" | "yesterday",
   date: string | null | undefined,
@@ -450,11 +463,16 @@ export const createFeed = createServerFn({ method: "POST" })
   .validator(authenticated.extend(createFeedRequestSchema.shape))
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
-    await requireBabyMembership(data.babyId, userId);
+    await requireBabyWriteAccess(data.babyId, userId);
     const [existing] = await db
       .select()
       .from(feedLogs)
-      .where(eq(feedLogs.idempotencyKey, data.idempotencyKey))
+      .where(
+        and(
+          eq(feedLogs.idempotencyKey, data.idempotencyKey),
+          eq(feedLogs.babyId, data.babyId),
+        ),
+      )
       .limit(1);
     if (existing) return existing;
     const [feed] = await db
@@ -547,11 +565,16 @@ export const createPumpingLog = createServerFn({ method: "POST" })
   .validator(authenticated.extend(createPumpingRequestSchema.shape))
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
-    await requireBabyMembership(data.babyId, userId);
+    await requireBabyWriteAccess(data.babyId, userId);
     const [existing] = await db
       .select()
       .from(pumpingLogs)
-      .where(eq(pumpingLogs.idempotencyKey, data.idempotencyKey))
+      .where(
+        and(
+          eq(pumpingLogs.idempotencyKey, data.idempotencyKey),
+          eq(pumpingLogs.babyId, data.babyId),
+        ),
+      )
       .limit(1);
     if (existing) return existing;
     const [session] = await db
@@ -570,7 +593,11 @@ export const createPumpingLog = createServerFn({ method: "POST" })
   });
 
 function csvCell(value: string | number | null) {
-  const text = value === null ? "" : String(value);
+  let text = value === null ? "" : String(value);
+  // Neutralize spreadsheet formula injection (Excel/Sheets execute leading =, +, -, @).
+  if (/^[=+\-@]/.test(text)) {
+    text = `'${text}`;
+  }
   return `"${text.replaceAll('"', '""')}"`;
 }
 
@@ -671,7 +698,7 @@ export const updateFeed = createServerFn({ method: "POST" })
       .where(eq(feedLogs.id, data.feedId))
       .limit(1);
     if (!feed) throw new Error("Feed not found.");
-    await requireBabyMembership(feed.babyId, userId);
+    await requireBabyWriteAccess(feed.babyId, userId);
     const [updated] = await db
       .update(feedLogs)
       .set({
@@ -697,7 +724,7 @@ export const deleteFeed = createServerFn({ method: "POST" })
       .where(eq(feedLogs.id, data.feedId))
       .limit(1);
     if (!feed) throw new Error("Feed not found.");
-    await requireBabyMembership(feed.babyId, userId);
+    await requireBabyWriteAccess(feed.babyId, userId);
     await db.delete(feedLogs).where(eq(feedLogs.id, data.feedId));
     return null;
   });

@@ -85,6 +85,13 @@
       "when": 1790052000000,
       "tag": "0017_activity_source",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790053000000,
+      "tag": "0018_scope_idempotency_key",
+      "breakpoints": true
     }
   ]
 }

@@ -69,7 +69,8 @@ export const feedLogs = cofeed.table("feed_logs", {
   breastMilkPortionVolume: real("breast_milk_portion_volume"),
   breastMilkPortionUnit: volumeUnitEnum("breast_milk_portion_unit"),
   source: text("source").notNull().default("cofeed"),
-  idempotencyKey: text("idempotency_key").notNull().unique(),
+  // Unique per (baby_id, idempotency_key) via drizzle/0018_scope_idempotency_key.sql.
+  idempotencyKey: text("idempotency_key").notNull(),
   createdByUserId: uuid("created_by_user_id")
     .notNull()
     .references(() => authUsers.id, { onDelete: "cascade" }),
@@ -89,7 +90,8 @@ export const pumpingLogs = cofeed.table("pumping_logs", {
   volume: real("volume").notNull(),
   unit: volumeUnitEnum("unit").notNull(),
   source: text("source").notNull().default("cofeed"),
-  idempotencyKey: text("idempotency_key").notNull().unique(),
+  // Unique per (baby_id, idempotency_key) via drizzle/0018_scope_idempotency_key.sql.
+  idempotencyKey: text("idempotency_key").notNull(),
   createdByUserId: uuid("created_by_user_id")
     .notNull()
     .references(() => authUsers.id, { onDelete: "cascade" }),
