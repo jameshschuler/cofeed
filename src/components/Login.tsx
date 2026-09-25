@@ -1,5 +1,5 @@
 import { type FormEvent } from "react";
-import { ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
+import { Baby, ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -83,7 +83,17 @@ export function Login({
             </div>
           </div>
 
-          <div className="flex-1" />
+          <div className="flex flex-1 items-center justify-center py-8">
+            <div className="max-w-xs text-center">
+              <Baby className="mx-auto size-7 text-primary" />
+              <p className="mt-3 text-sm font-medium text-foreground">
+                Keep your household in sync.
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Log feeds, share updates, and stay close to the moments that matter.
+              </p>
+            </div>
+          </div>
 
           <div className="space-y-3">
             {errorMessage ? (

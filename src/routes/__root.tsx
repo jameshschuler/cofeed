@@ -27,6 +27,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
       },
       { title: "CoFeed" },
+      { link: [{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" }] },
     ],
   }),
   component: RootComponent,
