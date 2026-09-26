@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../lib/auth-token";
 import { getDeviceTimezone } from "../lib/timezone";
+import { getBabyProfile, updateBabyProfile } from "../server/babies";
 import {
   joinHousehold as joinHouseholdOnServer,
   leaveHousehold as leaveHouseholdOnServer,
   listHouseholdMembers,
   listHouseholds,
   removeHouseholdMember,
-  getBabyProfile,
-  getProfile,
-  updateBabyProfile,
-} from "../server/functions";
+} from "../server/households";
+import { getProfile } from "../server/profile";
 
 export type HouseholdMembership = {
   household_id: string;
@@ -184,7 +183,9 @@ export function useHouseholds({
   }
 
   async function saveBabyProfile(name: string, dateOfBirth: string) {
-    if (!babyProfile) return;
+    if (!babyProfile) {
+      return;
+    }
     setErrorMessage(null);
     setSuccessMessage(null);
     setIsSavingBabyProfile(true);

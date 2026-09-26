@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { isPrivateScreen, type Screen } from "../types/route-types";
+import { getDeviceTimezone } from "../lib/timezone";
 
 type NavigateTo = (nextScreen: Screen, options?: { replace?: boolean }) => void;
 
@@ -64,7 +65,14 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+      // Supabase re-emits the session when the tab regains focus and on token
+      // refresh. Keep the existing object for the same user so effects keyed on
+      // `session` don't refetch; API calls read the fresh token via getAccessToken.
+      setSession((previous) =>
+        previous && nextSession && previous.user.id === nextSession.user.id
+          ? previous
+          : nextSession,
+      );
 
       if (nextSession) {
         if (screen === "home" || screen === "login" || screen === "signup") {
@@ -130,6 +138,9 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
     const { error, data } = await supabase.auth.signUp({
       email,
       password,
+      // Read by the signup trigger, which only creates a default household for
+      // CoFeed signups (auth is shared with other apps) in the user's timezone.
+      options: { data: { app: "cofeed", timezone: getDeviceTimezone() } },
     });
 
     setIsSubmitting(false);

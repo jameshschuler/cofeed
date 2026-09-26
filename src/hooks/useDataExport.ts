@@ -1,6 +1,6 @@
 import { getAccessToken } from "../lib/auth-token";
 import { formatZonedDateTime, getDeviceTimezone } from "../lib/timezone";
-import { exportActivityCsv } from "../server/functions";
+import { exportActivityCsv } from "../server/export";
 
 export function useDataExport({
   userId,
@@ -12,7 +12,9 @@ export function useDataExport({
   setSuccessMessage: (value: string | null) => void;
 }) {
   async function exportData() {
-    if (!userId) return;
+    if (!userId) {
+      return;
+    }
 
     setErrorMessage(null);
     setSuccessMessage(null);

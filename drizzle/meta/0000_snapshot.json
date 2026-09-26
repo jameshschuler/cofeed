@@ -1,9 +1,34 @@
 {
-  "id": "9d618559-47d1-4ec1-82f1-b77dfbcdc8af",
+  "id": "53ab52d9-f068-47fa-bd6d-93b40bdaeec6",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "auth.users": {
+      "name": "users",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "cofeed.babies": {
       "name": "babies",
       "schema": "cofeed",
@@ -86,209 +111,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "cofeed.daily_intake_goals": {
-      "name": "daily_intake_goals",
-      "schema": "cofeed",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "baby_id": {
-          "name": "baby_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "date": {
-          "name": "date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "calculated_from_weight_entry_id": {
-          "name": "calculated_from_weight_entry_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "growth_rate_oz_per_week": {
-          "name": "growth_rate_oz_per_week",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "goal_volume_oz": {
-          "name": "goal_volume_oz",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "goal_volume_ml": {
-          "name": "goal_volume_ml",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "daily_intake_goals_baby_id_babies_id_fk": {
-          "name": "daily_intake_goals_baby_id_babies_id_fk",
-          "tableFrom": "daily_intake_goals",
-          "tableTo": "babies",
-          "schemaTo": "cofeed",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "daily_intake_goals_calculated_from_weight_entry_id_weight_entries_id_fk": {
-          "name": "daily_intake_goals_calculated_from_weight_entry_id_weight_entries_id_fk",
-          "tableFrom": "daily_intake_goals",
-          "tableTo": "weight_entries",
-          "schemaTo": "cofeed",
-          "columnsFrom": [
-            "calculated_from_weight_entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "daily_intake_goals_baby_date_unique": {
-          "name": "daily_intake_goals_baby_date_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "baby_id",
-            "date"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "cofeed.diaper_logs": {
-      "name": "diaper_logs",
-      "schema": "cofeed",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "baby_id": {
-          "name": "baby_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "feed_log_id": {
-          "name": "feed_log_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "wet": {
-          "name": "wet",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "poopy": {
-          "name": "poopy",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "diaper_logs_baby_id_babies_id_fk": {
-          "name": "diaper_logs_baby_id_babies_id_fk",
-          "tableFrom": "diaper_logs",
-          "tableTo": "babies",
-          "schemaTo": "cofeed",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "diaper_logs_feed_log_id_feed_logs_id_fk": {
-          "name": "diaper_logs_feed_log_id_feed_logs_id_fk",
-          "tableFrom": "diaper_logs",
-          "tableTo": "feed_logs",
-          "schemaTo": "cofeed",
-          "columnsFrom": [
-            "feed_log_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "diaper_logs_feed_log_id_unique": {
-          "name": "diaper_logs_feed_log_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "feed_log_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "cofeed.feed_logs": {
       "name": "feed_logs",
       "schema": "cofeed",
@@ -312,43 +134,38 @@
           "primaryKey": false,
           "notNull": true
         },
-        "ended_at": {
-          "name": "ended_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "volume_oz": {
-          "name": "volume_oz",
+        "formula_portion_volume": {
+          "name": "formula_portion_volume",
           "type": "real",
           "primaryKey": false,
           "notNull": false
         },
-        "volume_ml": {
-          "name": "volume_ml",
+        "formula_portion_unit": {
+          "name": "formula_portion_unit",
+          "type": "volume_unit",
+          "typeSchema": "cofeed",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "breast_milk_portion_volume": {
+          "name": "breast_milk_portion_volume",
           "type": "real",
           "primaryKey": false,
           "notNull": false
         },
-        "vitamin_d_given": {
-          "name": "vitamin_d_given",
-          "type": "boolean",
+        "breast_milk_portion_unit": {
+          "name": "breast_milk_portion_unit",
+          "type": "volume_unit",
+          "typeSchema": "cofeed",
           "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "notNull": false
         },
-        "spit_up": {
-          "name": "spit_up",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "notes": {
-          "name": "notes",
+        "source": {
+          "name": "source",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'cofeed'"
         },
         "idempotency_key": {
           "name": "idempotency_key",
@@ -417,10 +234,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "feed_logs_idempotency_key_unique": {
-          "name": "feed_logs_idempotency_key_unique",
+        "feed_logs_baby_idempotency_key_unique": {
+          "name": "feed_logs_baby_idempotency_key_unique",
           "nullsNotDistinct": false,
           "columns": [
+            "baby_id",
             "idempotency_key"
           ]
         }
@@ -460,6 +278,13 @@
           "notNull": true,
           "default": "'caregiver'"
         },
+        "is_default": {
+          "name": "is_default",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -468,7 +293,61 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "household_members_household_user_unique": {
+          "name": "household_members_household_user_unique",
+          "columns": [
+            {
+              "expression": "household_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "household_members_one_owner_per_user": {
+          "name": "household_members_one_owner_per_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"cofeed\".\"household_members\".\"role\" = 'owner'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "household_members_one_default_per_user": {
+          "name": "household_members_one_default_per_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"cofeed\".\"household_members\".\"is_default\"",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "household_members_household_id_households_id_fk": {
           "name": "household_members_household_id_households_id_fk",
@@ -528,6 +407,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "join_code": {
+          "name": "join_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "week_starts_monday": {
           "name": "week_starts_monday",
           "type": "boolean",
@@ -553,13 +438,21 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "households_join_code_unique": {
+          "name": "households_join_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "join_code"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "cofeed.weight_entries": {
-      "name": "weight_entries",
+    "cofeed.pumping_logs": {
+      "name": "pumping_logs",
       "schema": "cofeed",
       "columns": {
         "id": {
@@ -575,32 +468,53 @@
           "primaryKey": false,
           "notNull": true
         },
-        "measured_at": {
-          "name": "measured_at",
+        "started_at": {
+          "name": "started_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
         },
-        "pounds": {
-          "name": "pounds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "ounces": {
-          "name": "ounces",
+        "volume": {
+          "name": "volume",
           "type": "real",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
-        "grams": {
-          "name": "grams",
-          "type": "real",
+        "unit": {
+          "name": "unit",
+          "type": "volume_unit",
+          "typeSchema": "cofeed",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'cofeed'"
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -609,13 +523,98 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "weight_entries_baby_id_babies_id_fk": {
-          "name": "weight_entries_baby_id_babies_id_fk",
-          "tableFrom": "weight_entries",
+        "pumping_logs_baby_id_babies_id_fk": {
+          "name": "pumping_logs_baby_id_babies_id_fk",
+          "tableFrom": "pumping_logs",
           "tableTo": "babies",
           "schemaTo": "cofeed",
           "columnsFrom": [
             "baby_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pumping_logs_created_by_user_id_users_id_fk": {
+          "name": "pumping_logs_created_by_user_id_users_id_fk",
+          "tableFrom": "pumping_logs",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pumping_logs_baby_idempotency_key_unique": {
+          "name": "pumping_logs_baby_idempotency_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "baby_id",
+            "idempotency_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "cofeed.user_preferences": {
+      "name": "user_preferences",
+      "schema": "cofeed",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "profile_name": {
+          "name": "profile_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_volume_unit": {
+          "name": "display_volume_unit",
+          "type": "volume_unit",
+          "typeSchema": "cofeed",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'oz'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_preferences_user_id_users_id_fk": {
+          "name": "user_preferences_user_id_users_id_fk",
+          "tableFrom": "user_preferences",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -647,6 +646,14 @@
       "values": [
         "us_customary",
         "metric"
+      ]
+    },
+    "cofeed.volume_unit": {
+      "name": "volume_unit",
+      "schema": "cofeed",
+      "values": [
+        "oz",
+        "ml"
       ]
     }
   },

@@ -214,7 +214,9 @@ export function Households() {
       <Dialog
         open={pendingConfirmation !== null}
         onOpenChange={(open) => {
-          if (!open) setPendingConfirmation(null);
+          if (!open) {
+            setPendingConfirmation(null);
+          }
         }}
       >
         <DialogContent>
@@ -242,7 +244,9 @@ export function Households() {
               type="button"
               variant="destructive"
               onClick={() => {
-                if (!pendingConfirmation) return;
+                if (!pendingConfirmation) {
+                  return;
+                }
                 if (pendingConfirmation.type === "remove") {
                   actions.onRemoveMember(
                     pendingConfirmation.householdId,

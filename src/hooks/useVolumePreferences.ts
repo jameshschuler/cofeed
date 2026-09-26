@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../lib/auth-token";
-import { getPreferences, updatePreferences } from "../server/functions";
+import { getPreferences, updatePreferences } from "../server/preferences";
 import type { VolumeUnit } from "../types/route-types";
 
 type UseVolumePreferencesOptions = {
@@ -35,7 +35,9 @@ export function useVolumePreferences({
         );
       })
       .finally(() => {
-        if (isCurrentRequest) setLoadedUserId(userId);
+        if (isCurrentRequest) {
+          setLoadedUserId(userId);
+        }
       });
 
     return () => {
@@ -44,7 +46,9 @@ export function useVolumePreferences({
   }, [userId, setErrorMessage]);
 
   async function updateDisplayVolumeUnit(nextUnit: VolumeUnit) {
-    if (!userId || nextUnit === displayVolumeUnit) return;
+    if (!userId || nextUnit === displayVolumeUnit) {
+      return;
+    }
 
     setErrorMessage(null);
     setSuccessMessage(null);

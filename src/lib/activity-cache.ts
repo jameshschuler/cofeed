@@ -17,12 +17,16 @@ function getBabyKey(userId: string) {
 }
 
 export function readLastBabyId(userId: string) {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") {
+    return null;
+  }
   return window.localStorage.getItem(getBabyKey(userId));
 }
 
 export function writeLastBabyId(userId: string, babyId: string) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
   try {
     window.localStorage.setItem(getBabyKey(userId), babyId);
   } catch {
@@ -34,7 +38,9 @@ export function readActivityCache(
   userId: string,
   babyId: string,
 ): ActivityCache | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined") {
+    return null;
+  }
 
   try {
     const value = window.localStorage.getItem(getKey(userId, babyId));
@@ -49,7 +55,9 @@ export function writeActivityCache(
   babyId: string,
   value: Omit<ActivityCache, "savedAt">,
 ) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
 
   try {
     window.localStorage.setItem(

@@ -49,7 +49,9 @@ export function useInstallPrompt() {
   }, []);
 
   async function promptInstall() {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      return;
+    }
 
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;

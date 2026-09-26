@@ -8,7 +8,9 @@ import {
   writeActivityCache,
   writeLastBabyId,
 } from "../lib/activity-cache";
-import { getProfile, listFeeds, listPumpingLogs } from "../server/functions";
+import { listFeeds } from "../server/feeds";
+import { getProfile } from "../server/profile";
+import { listPumpingLogs } from "../server/pumping";
 import type {
   FeedFilter,
   FeedLogItem,
@@ -60,7 +62,9 @@ export function useFeedData({
     }>,
   ) {
     const userId = session?.user?.id;
-    if (!userId) return;
+    if (!userId) {
+      return;
+    }
     const cached = getCachedActivity(babyId);
     writeActivityCache(userId, babyId, {
       feeds: patch.feeds ?? cached?.feeds ?? [],
@@ -94,11 +98,15 @@ export function useFeedData({
           limit: 50,
         },
       });
-      if (feedRequestIdRef.current !== requestId) return;
+      if (feedRequestIdRef.current !== requestId) {
+        return;
+      }
       setFeedLogs(feedData);
       saveCachedActivity(babyId, { feeds: feedData });
     } catch (error) {
-      if (feedRequestIdRef.current !== requestId) return;
+      if (feedRequestIdRef.current !== requestId) {
+        return;
+      }
       const cached = getCachedActivity(babyId);
       if (cached) {
         setFeedLogs(cached.feeds);
@@ -130,11 +138,15 @@ export function useFeedData({
           limit: 100,
         },
       });
-      if (pumpingRequestIdRef.current !== requestId) return;
+      if (pumpingRequestIdRef.current !== requestId) {
+        return;
+      }
       setPumpingLogs(pumpingData);
       saveCachedActivity(babyId, { pumpingLogs: pumpingData });
     } catch (error) {
-      if (pumpingRequestIdRef.current !== requestId) return;
+      if (pumpingRequestIdRef.current !== requestId) {
+        return;
+      }
       const cached = getCachedActivity(babyId);
       if (cached) {
         setPumpingLogs(cached.pumpingLogs);
@@ -151,7 +163,9 @@ export function useFeedData({
 
   async function refreshWeeklyStats(babyId: string, { showLoading = true } = {}) {
     const requestId = ++weeklyRequestIdRef.current;
-    if (showLoading) setIsLoadingWeeklyStats(true);
+    if (showLoading) {
+      setIsLoadingWeeklyStats(true);
+    }
     setWeeklyFeedError(null);
     setWeeklyPumpingError(null);
     const accessToken = await getAccessToken();
@@ -177,7 +191,9 @@ export function useFeedData({
         },
       }),
     ]);
-    if (weeklyRequestIdRef.current !== requestId) return;
+    if (weeklyRequestIdRef.current !== requestId) {
+      return;
+    }
 
     if (weeklyFeeds.status === "fulfilled") {
       setWeeklyFeedLogs(weeklyFeeds.value);
@@ -229,7 +245,9 @@ export function useFeedData({
         const { babyId } = await getProfile({
           data: { accessToken: await getAccessToken(), timezone: getDeviceTimezone() },
         });
-        if (session?.user?.id) writeLastBabyId(session.user.id, babyId);
+        if (session?.user?.id) {
+          writeLastBabyId(session.user.id, babyId);
+        }
         setActiveBabyId(babyId);
         const dateForScreen = screen === "dashboard" ? null : selectedDate;
         await refreshFeedLogs(
@@ -270,7 +288,9 @@ export function useFeedData({
           error instanceof Error ? error.message : "Unable to load activity.",
         );
       } finally {
-        if (loadRequestIdRef.current === loadRequestId) setIsLoadingFeeds(false);
+        if (loadRequestIdRef.current === loadRequestId) {
+          setIsLoadingFeeds(false);
+        }
       }
     }
 

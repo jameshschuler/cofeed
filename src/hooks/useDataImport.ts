@@ -7,7 +7,9 @@ import {
   planImportRow,
   type ImportRow,
 } from "../lib/nara-import";
-import { getProfile, createFeed, createPumpingLog } from "../server/functions";
+import { createFeed } from "../server/feeds";
+import { getProfile } from "../server/profile";
+import { createPumpingLog } from "../server/pumping";
 
 export function useDataImport({
   userId,
@@ -26,7 +28,9 @@ export function useDataImport({
   const [importResultMessage, setImportResultMessage] = useState<string | null>(null);
 
   async function importFile(file: File) {
-    if (!userId) return;
+    if (!userId) {
+      return;
+    }
     setErrorMessage(null);
     setSuccessMessage(null);
     setImportResultMessage(null);
@@ -113,7 +117,9 @@ export function useDataImport({
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (file) void importFile(file);
+    if (file) {
+      void importFile(file);
+    }
   }
 
   return {

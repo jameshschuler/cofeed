@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../lib/auth-token";
 import { getDeviceTimezone } from "../lib/timezone";
-import { getProfile, updateProfileName } from "../server/functions";
+import { getProfile, updateProfileName } from "../server/profile";
 
 type UseAppProfileOptions = {
   userId: string | null;
@@ -56,7 +56,9 @@ export function useAppProfile({
 
   async function saveProfileName(nextProfileName: string) {
     const trimmedName = nextProfileName.trim();
-    if (!userId || !trimmedName || trimmedName === profileName) return;
+    if (!userId || !trimmedName || trimmedName === profileName) {
+      return;
+    }
 
     setErrorMessage(null);
     setSuccessMessage(null);

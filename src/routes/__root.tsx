@@ -39,13 +39,19 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   useEffect(() => {
-    if (!import.meta.env.DEV || !("serviceWorker" in navigator)) return;
+    if (!import.meta.env.DEV || !("serviceWorker" in navigator)) {
+      return;
+    }
     void navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const registration of registrations) void registration.unregister();
+      for (const registration of registrations) {
+        void registration.unregister();
+      }
     });
     if ("caches" in window) {
       void window.caches.keys().then((names) => {
-        for (const name of names) void window.caches.delete(name);
+        for (const name of names) {
+          void window.caches.delete(name);
+        }
       });
     }
   }, []);

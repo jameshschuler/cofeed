@@ -25,7 +25,9 @@ export function EditBottleDialog({
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) actions.onCancelFeedEdit();
+        if (!nextOpen) {
+          actions.onCancelFeedEdit();
+        }
       }}
     >
       <DialogContent>

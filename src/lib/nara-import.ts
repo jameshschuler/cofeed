@@ -20,7 +20,9 @@ export function parseCsv(text: string) {
       row.push(cell);
       cell = "";
     } else if ((character === "\n" || character === "\r") && !quoted) {
-      if (character === "\r" && next === "\n") index += 1;
+      if (character === "\r" && next === "\n") {
+        index += 1;
+      }
       row.push(cell);
       rows.push(row);
       row = [];

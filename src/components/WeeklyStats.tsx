@@ -52,7 +52,9 @@ function getLocalDayKey(date: Date) {
 }
 
 function getCssVar(name: string) {
-  if (typeof window === "undefined") return "";
+  if (typeof window === "undefined") {
+    return "";
+  }
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 

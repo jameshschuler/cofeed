@@ -286,7 +286,9 @@ export function FeedLogList({
       <Dialog
         open={pendingDeleteFeed !== null}
         onOpenChange={(open) => {
-          if (!open) setPendingDeleteFeed(null);
+          if (!open) {
+            setPendingDeleteFeed(null);
+          }
         }}
       >
         <DialogContent>
@@ -306,7 +308,9 @@ export function FeedLogList({
               type="button"
               variant="destructive"
               onClick={() => {
-                if (pendingDeleteFeed) actions.onDeleteFeed(pendingDeleteFeed.id);
+                if (pendingDeleteFeed) {
+                  actions.onDeleteFeed(pendingDeleteFeed.id);
+                }
                 setPendingDeleteFeed(null);
               }}
             >
