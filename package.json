@@ -13,6 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:deploy": "drizzle-kit migrate --config=drizzle.config.ts",
+    "db:migrate:bootstrap": "tsx src/db/scripts/bootstrap-cofeed-migrations.ts",
     "db:reset": "tsx src/db/scripts/reset-cofeed-data.ts",
     "db:seed": "tsx src/db/seeds/seed.ts",
     "db:seed:james": "SEED_USER_EMAIL=jameshschuler1+cofeed@gmail.com tsx src/db/seeds/seed.ts",
