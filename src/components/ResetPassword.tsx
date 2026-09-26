@@ -42,7 +42,7 @@ export function ResetPassword({
   onGoToLogin: () => void;
 }) {
   return (
-    <Card className="flex h-full w-full flex-col rounded-2xl">
+    <Card className="flex h-full w-full flex-col rounded-2xl sm:mx-auto sm:h-auto sm:max-w-md sm:self-center">
       <CardHeader>
         <CardTitle className="text-xl">
           {isRecoverySession ? "Set a new password" : "Reset your password"}
@@ -112,7 +112,6 @@ export function ResetPassword({
             )}
           </div>
 
-          <div className="flex-1" />
           <div className="space-y-3">
             {errorMessage ? (
               <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">

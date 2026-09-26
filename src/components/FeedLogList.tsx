@@ -159,6 +159,10 @@ export function FeedLogList({
             </section>
           ))}
         </div>
+      ) : state.list.loadError ? (
+        <div className="mt-2 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {state.list.loadError}
+        </div>
       ) : state.list.logs.length > 0 ? (
         <div className="mt-2 space-y-6 pr-1">
           {groupedFeeds.map((group) => (

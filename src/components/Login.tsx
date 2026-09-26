@@ -38,7 +38,7 @@ export function Login({
   onGoToHome: () => void;
 }) {
   return (
-    <Card className="flex h-full w-full flex-col rounded-2xl">
+    <Card className="flex h-full w-full flex-col rounded-2xl sm:mx-auto sm:h-auto sm:max-w-md sm:self-center">
       <CardHeader>
         <CardTitle className="text-xl">Sign In</CardTitle>
         <CardDescription>
@@ -83,7 +83,7 @@ export function Login({
             </div>
           </div>
 
-          <div className="flex flex-1 items-center justify-center py-8">
+          <div className="flex flex-1 items-center justify-center py-8 sm:py-10">
             <div className="max-w-xs text-center">
               <Baby className="mx-auto size-7 text-primary" />
               <p className="mt-3 text-sm font-medium text-foreground">

@@ -195,7 +195,7 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
     setSession(null);
     setPassword("");
     setConfirmPassword("");
-    setSuccessMessage("Password updated. You can now sign in.");
+    navigateTo("login", { replace: true });
   }
 
   async function handleSignOut() {

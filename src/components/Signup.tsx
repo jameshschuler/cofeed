@@ -40,7 +40,7 @@ export function Signup({
   onGoToHome: () => void;
 }) {
   return (
-    <Card className="flex h-full w-full flex-col rounded-2xl">
+    <Card className="flex h-full w-full flex-col rounded-2xl sm:mx-auto sm:h-auto sm:max-w-md sm:self-center">
       <CardHeader>
         <CardTitle className="text-xl">Sign Up</CardTitle>
         <CardDescription>Create an account with email and password.</CardDescription>
@@ -99,8 +99,6 @@ export function Signup({
               </div>
             </div>
           </div>
-
-          <div className="flex-1" />
 
           <div className="space-y-3">
             {errorMessage ? (

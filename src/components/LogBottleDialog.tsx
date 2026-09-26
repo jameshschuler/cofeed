@@ -73,11 +73,12 @@ export function LogBottleDialog({
       <Button
         type="button"
         size="icon"
+        className="fixed right-4 bottom-[calc(7rem+env(safe-area-inset-bottom))] z-40 size-12 rounded-full shadow-lg sm:static sm:size-9 sm:rounded-md sm:shadow-xs"
         aria-label="Log a bottle"
         title="Log a bottle"
         onClick={handleOpen}
       >
-        <Plus className="size-4" />
+        <Plus className="size-5 sm:size-4" />
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
