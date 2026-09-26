@@ -18,7 +18,16 @@ export function Home({
         <CardTitle className="text-xl">CoFeed</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
-        <div className="flex-1" />
+        <div className="flex flex-1 items-center justify-center py-8 sm:py-10">
+          <div className="max-w-xs text-center">
+            <p className="text-sm font-medium text-foreground">
+              Keep your household in sync.
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Log feeds, share updates, and stay close to the moments that matter.
+            </p>
+          </div>
+        </div>
       </CardContent>
       <CardFooter className="mt-auto">
         <div className="grid w-full gap-2">
