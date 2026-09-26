@@ -1,4 +1,5 @@
 import { getAccessToken } from "../lib/auth-token";
+import { formatZonedDateTime, getDeviceTimezone } from "../lib/timezone";
 import { exportActivityCsv } from "../server/functions";
 
 export function useDataExport({
@@ -18,13 +19,17 @@ export function useDataExport({
 
     try {
       const csv = await exportActivityCsv({
-        data: { accessToken: await getAccessToken() },
+        data: { accessToken: await getAccessToken(), timezone: getDeviceTimezone() },
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `cofeed-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      const localDate = formatZonedDateTime(
+        new Date(),
+        getDeviceTimezone() ?? "UTC",
+      ).slice(0, 10);
+      link.download = `cofeed-export-${localDate}.csv`;
       link.click();
       URL.revokeObjectURL(url);
       setSuccessMessage("Activity exported.");

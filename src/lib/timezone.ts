@@ -71,3 +71,52 @@ export function getZonedDaysAgoStart(date: Date, timeZone: string, days: number)
     timeZone,
   );
 }
+
+// Start of a calendar date ("YYYY-MM-DD") in the given timezone, as a UTC instant.
+export function getZonedDateStart(dateKey: string, timeZone: string, addDays = 0) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const calendarDate = new Date(Date.UTC(year, month - 1, day));
+  calendarDate.setUTCDate(calendarDate.getUTCDate() + addDays);
+
+  return getUtcStartForParts(
+    {
+      year: calendarDate.getUTCFullYear(),
+      month: calendarDate.getUTCMonth() + 1,
+      day: calendarDate.getUTCDate(),
+      hour: 0,
+      minute: 0,
+      second: 0,
+    },
+    timeZone,
+  );
+}
+
+// Formats a UTC instant as local wall-clock time ("YYYY-MM-DD HH:mm") in the given timezone.
+export function formatZonedDateTime(date: Date, timeZone: string) {
+  const { year, month, day, hour, minute } = getDateParts(date, timeZone);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}`;
+}
+
+export function getDeviceTimezone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function isValidTimezone(timeZone: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Today's calendar date ("YYYY-MM-DD") in the given timezone.
+export function getZonedTodayKey(timeZone: string | null | undefined, now = new Date()) {
+  const zone = timeZone && isValidTimezone(timeZone) ? timeZone : "UTC";
+  return formatZonedDateTime(now, zone).slice(0, 10);
+}

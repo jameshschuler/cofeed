@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getAccessToken } from "../lib/auth-token";
+import { getDeviceTimezone } from "../lib/timezone";
 import {
   readActivityCache,
   readLastBabyId,
@@ -42,6 +43,7 @@ export function useFeedData({
   const feedRequestIdRef = useRef(0);
   const pumpingRequestIdRef = useRef(0);
   const loadRequestIdRef = useRef(0);
+  const weeklyRequestIdRef = useRef(0);
 
   function getCachedActivity(babyId: string) {
     const userId = session?.user?.id;
@@ -83,8 +85,10 @@ export function useFeedData({
       const feedData = await listFeeds({
         data: {
           accessToken: await getAccessToken(),
-          babyId,
+          // The feeds screen lists activity across every household.
+          babyId: screen === "feeds" ? null : babyId,
           since: null,
+          timezone: getDeviceTimezone(),
           range: filter === "date" ? "date" : filter,
           date: filter === "date" ? date : null,
           limit: 50,
@@ -117,8 +121,10 @@ export function useFeedData({
       const pumpingData = await listPumpingLogs({
         data: {
           accessToken: await getAccessToken(),
-          babyId,
+          // The feeds screen lists activity across every household.
+          babyId: screen === "feeds" ? null : babyId,
           since: null,
+          timezone: getDeviceTimezone(),
           range: filter === "date" ? "date" : filter,
           date: filter === "date" ? date : null,
           limit: 100,
@@ -143,6 +149,72 @@ export function useFeedData({
     }
   }
 
+  async function refreshWeeklyStats(babyId: string, { showLoading = true } = {}) {
+    const requestId = ++weeklyRequestIdRef.current;
+    if (showLoading) setIsLoadingWeeklyStats(true);
+    setWeeklyFeedError(null);
+    setWeeklyPumpingError(null);
+    const accessToken = await getAccessToken();
+    const [weeklyFeeds, weeklyPumping] = await Promise.allSettled([
+      listFeeds({
+        data: {
+          accessToken,
+          babyId,
+          since: null,
+          range: "week",
+          timezone: getDeviceTimezone(),
+          limit: 100,
+        },
+      }),
+      listPumpingLogs({
+        data: {
+          accessToken,
+          babyId,
+          since: null,
+          range: "week",
+          timezone: getDeviceTimezone(),
+          limit: 100,
+        },
+      }),
+    ]);
+    if (weeklyRequestIdRef.current !== requestId) return;
+
+    if (weeklyFeeds.status === "fulfilled") {
+      setWeeklyFeedLogs(weeklyFeeds.value);
+      saveCachedActivity(babyId, { weeklyFeeds: weeklyFeeds.value });
+    } else {
+      const cached = getCachedActivity(babyId);
+      setWeeklyFeedLogs(cached?.weeklyFeeds ?? []);
+      setWeeklyFeedError(
+        cached
+          ? "Offline · showing cached feed stats."
+          : "Unable to load weekly feed stats.",
+      );
+      if (cached) {
+        setLastSyncedAt(cached.savedAt);
+        setIsUsingCachedActivity(true);
+      }
+    }
+
+    if (weeklyPumping.status === "fulfilled") {
+      setWeeklyPumpingLogs(weeklyPumping.value);
+      saveCachedActivity(babyId, { weeklyPumpingLogs: weeklyPumping.value });
+    } else {
+      const cached = getCachedActivity(babyId);
+      setWeeklyPumpingLogs(cached?.weeklyPumpingLogs ?? []);
+      setWeeklyPumpingError(
+        cached
+          ? "Offline · showing cached pumping stats."
+          : "Unable to load weekly pumping stats.",
+      );
+      if (cached) {
+        setLastSyncedAt(cached.savedAt);
+        setIsUsingCachedActivity(true);
+      }
+    }
+    setIsLoadingWeeklyStats(false);
+  }
+
   useEffect(() => {
     if ((screen !== "feeds" && screen !== "dashboard") || !session) {
       return;
@@ -155,7 +227,7 @@ export function useFeedData({
 
       try {
         const { babyId } = await getProfile({
-          data: { accessToken: await getAccessToken() },
+          data: { accessToken: await getAccessToken(), timezone: getDeviceTimezone() },
         });
         if (session?.user?.id) writeLastBabyId(session.user.id, babyId);
         setActiveBabyId(babyId);
@@ -172,53 +244,7 @@ export function useFeedData({
         );
 
         if (screen === "dashboard") {
-          setIsLoadingWeeklyStats(true);
-          setWeeklyFeedError(null);
-          setWeeklyPumpingError(null);
-          const accessToken = await getAccessToken();
-          const [weeklyFeeds, weeklyPumping] = await Promise.allSettled([
-            listFeeds({
-              data: { accessToken, babyId, since: null, range: "week", limit: 100 },
-            }),
-            listPumpingLogs({
-              data: { accessToken, babyId, since: null, range: "week", limit: 100 },
-            }),
-          ]);
-
-          if (weeklyFeeds.status === "fulfilled") {
-            setWeeklyFeedLogs(weeklyFeeds.value);
-            saveCachedActivity(babyId, { weeklyFeeds: weeklyFeeds.value });
-          } else {
-            const cached = getCachedActivity(babyId);
-            setWeeklyFeedLogs(cached?.weeklyFeeds ?? []);
-            setWeeklyFeedError(
-              cached
-                ? "Offline · showing cached feed stats."
-                : "Unable to load weekly feed stats.",
-            );
-            if (cached) {
-              setLastSyncedAt(cached.savedAt);
-              setIsUsingCachedActivity(true);
-            }
-          }
-
-          if (weeklyPumping.status === "fulfilled") {
-            setWeeklyPumpingLogs(weeklyPumping.value);
-            saveCachedActivity(babyId, { weeklyPumpingLogs: weeklyPumping.value });
-          } else {
-            const cached = getCachedActivity(babyId);
-            setWeeklyPumpingLogs(cached?.weeklyPumpingLogs ?? []);
-            setWeeklyPumpingError(
-              cached
-                ? "Offline · showing cached pumping stats."
-                : "Unable to load weekly pumping stats.",
-            );
-            if (cached) {
-              setLastSyncedAt(cached.savedAt);
-              setIsUsingCachedActivity(true);
-            }
-          }
-          setIsLoadingWeeklyStats(false);
+          await refreshWeeklyStats(babyId);
         } else {
           setIsLoadingWeeklyStats(false);
         }
@@ -266,5 +292,6 @@ export function useFeedData({
     feedsLoadError,
     refreshFeedLogs,
     refreshPumpingLogs,
+    refreshWeeklyStats,
   };
 }

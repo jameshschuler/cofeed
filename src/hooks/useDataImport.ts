@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getAccessToken } from "../lib/auth-token";
+import { getDeviceTimezone } from "../lib/timezone";
 import {
   deterministicUuid,
   parseCsv,
@@ -35,7 +36,7 @@ export function useDataImport({
       const rows = parseCsv(await file.text());
       const accessToken = await getAccessToken();
       const { babyId, profileName } = await getProfile({
-        data: { accessToken },
+        data: { accessToken, timezone: getDeviceTimezone() },
       });
       let imported = 0;
       let skipped = 0;

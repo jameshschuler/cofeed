@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lt, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client";
 import {
@@ -15,10 +15,18 @@ import {
 import {
   createFeedRequestSchema,
   createPumpingRequestSchema,
-  updateBabyProfileRequestSchema,
+  babyProfileFieldsSchema,
+  withDateOfBirthCheck,
   volumeUnitSchema,
 } from "../lib/api-contracts";
-import { getZonedDayStart, getZonedDaysAgoStart } from "../lib/timezone";
+import {
+  formatZonedDateTime,
+  getZonedDateStart,
+  getZonedDayStart,
+  getZonedDaysAgoStart,
+  getZonedTodayKey,
+  isValidTimezone,
+} from "../lib/timezone";
 
 const supabase = createClient(
   process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "",
@@ -94,17 +102,33 @@ function getRangeBounds(
     };
   }
   if (range === "date" && date) {
-    const anchor = new Date(`${date}T12:00:00`);
     return {
-      since: getZonedDayStart(anchor, timezone),
-      until: getZonedDaysAgoStart(anchor, timezone, -1),
+      since: getZonedDateStart(date, timezone),
+      until: getZonedDateStart(date, timezone, 1),
     };
   }
   return { since: since ? new Date(since) : null, until: null as Date | null };
 }
 
+async function resolveRangeTimezone(
+  requestedTimezone: string | null | undefined,
+  babyId: string | null | undefined,
+) {
+  if (requestedTimezone && isValidTimezone(requestedTimezone)) {
+    return requestedTimezone;
+  }
+  if (!babyId) return "UTC";
+  const [household] = await db
+    .select({ timezone: households.timezone })
+    .from(babies)
+    .innerJoin(households, eq(households.id, babies.householdId))
+    .where(eq(babies.id, babyId))
+    .limit(1);
+  return household?.timezone ?? "UTC";
+}
+
 export const getProfile = createServerFn({ method: "GET" })
-  .validator(authenticated)
+  .validator(authenticated.extend({ timezone: z.string().max(64).nullable().optional() }))
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
     const [membership] = await db
@@ -139,7 +163,7 @@ export const getProfile = createServerFn({ method: "GET" })
         .values({
           householdId,
           name: "Baby",
-          dateOfBirth: new Date().toISOString().slice(0, 10),
+          dateOfBirth: getZonedTodayKey(data.timezone),
         })
         .returning({ id: babies.id });
     }
@@ -210,7 +234,7 @@ export const getBabyProfile = createServerFn({ method: "GET" })
   });
 
 export const updateBabyProfile = createServerFn({ method: "POST" })
-  .validator(authenticated.extend(updateBabyProfileRequestSchema.shape))
+  .validator(withDateOfBirthCheck(authenticated.extend(babyProfileFieldsSchema.shape)))
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
     const [owner] = await db
@@ -394,28 +418,28 @@ export const removeHouseholdMember = createServerFn({ method: "POST" })
 export const listFeeds = createServerFn({ method: "GET" })
   .validator(
     authenticated.extend({
-      babyId: z.string().uuid(),
+      babyId: z.string().uuid().nullable().optional(),
       since: z.string().datetime().nullable(),
       range: z.enum(["today", "week", "all", "date", "yesterday"]).default("all"),
+      timezone: z.string().max(64).nullable().optional(),
       date: z.string().date().nullable().optional(),
       limit: z.number().int().min(1).max(100).default(50),
     }),
   )
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
-    await requireBabyMembership(data.babyId, userId);
-    const conditions = [eq(feedLogs.babyId, data.babyId)];
-    const [household] = await db
-      .select({ timezone: households.timezone })
-      .from(babies)
-      .innerJoin(households, eq(households.id, babies.householdId))
-      .where(eq(babies.id, data.babyId))
-      .limit(1);
+    // Without a babyId, logs from every household the user belongs to are
+    // returned; the householdMembers join below enforces access.
+    const conditions: SQL[] = [];
+    if (data.babyId) {
+      await requireBabyMembership(data.babyId, userId);
+      conditions.push(eq(feedLogs.babyId, data.babyId));
+    }
     const { since, until } = getRangeBounds(
       data.range,
       data.date,
       data.since,
-      household.timezone,
+      await resolveRangeTimezone(data.timezone, data.babyId),
     );
     if (since) conditions.push(gte(feedLogs.startedAt, since));
     if (until) conditions.push(lt(feedLogs.startedAt, until));
@@ -495,28 +519,28 @@ export const createFeed = createServerFn({ method: "POST" })
 export const listPumpingLogs = createServerFn({ method: "GET" })
   .validator(
     authenticated.extend({
-      babyId: z.string().uuid(),
+      babyId: z.string().uuid().nullable().optional(),
       since: z.string().datetime().nullable(),
       range: z.enum(["today", "week", "all", "date", "yesterday"]).default("all"),
+      timezone: z.string().max(64).nullable().optional(),
       date: z.string().date().nullable().optional(),
       limit: z.number().int().min(1).max(100).default(50),
     }),
   )
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
-    await requireBabyMembership(data.babyId, userId);
-    const conditions = [eq(pumpingLogs.babyId, data.babyId)];
-    const [household] = await db
-      .select({ timezone: households.timezone })
-      .from(babies)
-      .innerJoin(households, eq(households.id, babies.householdId))
-      .where(eq(babies.id, data.babyId))
-      .limit(1);
+    // Without a babyId, logs from every household the user belongs to are
+    // returned; the householdMembers join below enforces access.
+    const conditions: SQL[] = [];
+    if (data.babyId) {
+      await requireBabyMembership(data.babyId, userId);
+      conditions.push(eq(pumpingLogs.babyId, data.babyId));
+    }
     const { since, until } = getRangeBounds(
       data.range,
       data.date,
       data.since,
-      household.timezone,
+      await resolveRangeTimezone(data.timezone, data.babyId),
     );
     if (since) conditions.push(gte(pumpingLogs.startedAt, since));
     if (until) conditions.push(lt(pumpingLogs.startedAt, until));
@@ -602,9 +626,10 @@ function csvCell(value: string | number | null) {
 }
 
 export const exportActivityCsv = createServerFn({ method: "GET" })
-  .validator(authenticated)
+  .validator(authenticated.extend({ timezone: z.string().max(64).nullable().optional() }))
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
+    const timezone = await resolveRangeTimezone(data.timezone, null);
     const feeds = await db
       .select({
         type: sql<string>`'feed'`,
@@ -671,7 +696,7 @@ export const exportActivityCsv = createServerFn({ method: "GET" })
     const lines = rows.map((row) =>
       [
         row.type,
-        row.startedAt.toISOString(),
+        formatZonedDateTime(row.startedAt, timezone),
         row.householdName,
         row.babyName,
         row.formulaVolume,

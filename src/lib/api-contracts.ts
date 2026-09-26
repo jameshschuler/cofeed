@@ -1,3 +1,4 @@
+import { getZonedTodayKey } from "./timezone";
 import { z } from "zod";
 
 export const volumeUnitSchema = z.enum(["oz", "ml"]);
@@ -23,16 +24,24 @@ export const createPumpingRequestSchema = z.object({
   idempotencyKey: z.string().uuid(),
 });
 
-export const updateBabyProfileRequestSchema = z.object({
+export const babyProfileFieldsSchema = z.object({
   babyId: z.string().uuid(),
   name: z.string().trim().min(1).max(80),
-  dateOfBirth: z
-    .string()
-    .date()
-    .refine((value) => value <= new Date().toISOString().slice(0, 10), {
-      message: "Date of birth cannot be in the future.",
-    }),
+  dateOfBirth: z.string().date(),
+  // The user's timezone decides what "today" is for the future-date check.
+  timezone: z.string().max(64).nullable().optional(),
 });
+
+export function withDateOfBirthCheck<
+  T extends z.ZodType<{ dateOfBirth: string; timezone?: string | null }>,
+>(schema: T) {
+  return schema.refine((value) => value.dateOfBirth <= getZonedTodayKey(value.timezone), {
+    message: "Date of birth cannot be in the future.",
+    path: ["dateOfBirth"],
+  });
+}
+
+export const updateBabyProfileRequestSchema = withDateOfBirthCheck(babyProfileFieldsSchema);
 
 export const feedResponseSchema = z.object({
   id: z.string().uuid(),
@@ -49,9 +58,10 @@ export const feedResponseSchema = z.object({
 });
 
 export const listFeedsRequestSchema = z.object({
-  babyId: z.string().uuid(),
+  babyId: z.string().uuid().nullable().optional(),
   since: z.string().datetime().nullable().optional(),
   range: z.enum(["today", "week", "all", "date", "yesterday"]).default("all"),
+  timezone: z.string().max(64).nullable().optional(),
   date: z.string().date().nullable().optional(),
   limit: z.number().int().min(1).max(100).default(50),
 });

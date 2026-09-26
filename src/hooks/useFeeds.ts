@@ -188,10 +188,13 @@ export function useFeeds({
     setFeedFormulaPortionVolume("");
     setFeedBreastMilkPortionVolume("");
 
-    await feedData.refreshFeedLogs(
-      feedData.activeBabyId,
-      screen === "dashboard" ? "today" : feedFilter,
-    );
+    await Promise.all([
+      feedData.refreshFeedLogs(
+        feedData.activeBabyId,
+        screen === "dashboard" ? "today" : feedFilter,
+      ),
+      feedData.refreshWeeklyStats(feedData.activeBabyId, { showLoading: false }),
+    ]);
     return true;
   }
 
@@ -240,7 +243,13 @@ export function useFeeds({
       setPumpingVolume("");
       setComposeStartedAt(getLocalDateTimeValue());
       setSuccessMessage("Pumping session saved.");
-      await feedData.refreshPumpingLogs(feedData.activeBabyId, feedFilter);
+      await Promise.all([
+        feedData.refreshPumpingLogs(
+          feedData.activeBabyId,
+          screen === "dashboard" ? "today" : feedFilter,
+        ),
+        feedData.refreshWeeklyStats(feedData.activeBabyId, { showLoading: false }),
+      ]);
       return true;
     } catch (error) {
       setErrorMessage(
@@ -336,7 +345,13 @@ export function useFeeds({
 
     setEditingFeedId(null);
     setSuccessMessage("Feed updated.");
-    await feedData.refreshFeedLogs(feedData.activeBabyId);
+    await Promise.all([
+      feedData.refreshFeedLogs(
+        feedData.activeBabyId,
+        screen === "dashboard" ? "today" : feedFilter,
+      ),
+      feedData.refreshWeeklyStats(feedData.activeBabyId, { showLoading: false }),
+    ]);
   }
 
   async function handleDeleteFeed(feedId: string) {
@@ -365,7 +380,13 @@ export function useFeeds({
 
     setEditingFeedId(null);
     setSuccessMessage("Feed deleted.");
-    await feedData.refreshFeedLogs(feedData.activeBabyId);
+    await Promise.all([
+      feedData.refreshFeedLogs(
+        feedData.activeBabyId,
+        screen === "dashboard" ? "today" : feedFilter,
+      ),
+      feedData.refreshWeeklyStats(feedData.activeBabyId, { showLoading: false }),
+    ]);
   }
 
   const feedsRouteState: FeedsState = {

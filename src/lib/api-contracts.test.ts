@@ -1,3 +1,4 @@
+import { getZonedTodayKey } from "./timezone";
 import { describe, expect, it } from "vitest";
 import {
   createFeedRequestSchema,
@@ -48,5 +49,30 @@ describe("activity request contracts", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("checks the date of birth against today in the user's timezone", () => {
+    const base = {
+      babyId: "2f55973a-da57-4cdc-81cc-b34c312af634",
+      name: "Baby",
+    };
+    const now = new Date();
+    const todayInKiritimati = getZonedTodayKey("Pacific/Kiritimati", now);
+
+    // UTC+14 is always a calendar day ahead of UTC-11.
+    expect(
+      updateBabyProfileRequestSchema.safeParse({
+        ...base,
+        dateOfBirth: todayInKiritimati,
+        timezone: "Pacific/Kiritimati",
+      }).success,
+    ).toBe(true);
+    expect(
+      updateBabyProfileRequestSchema.safeParse({
+        ...base,
+        dateOfBirth: todayInKiritimati,
+        timezone: "Pacific/Pago_Pago",
+      }).success,
+    ).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../lib/auth-token";
+import { getDeviceTimezone } from "../lib/timezone";
 import {
   joinHousehold as joinHouseholdOnServer,
   leaveHousehold as leaveHouseholdOnServer,
@@ -66,7 +67,9 @@ export function useHouseholds({
       const accessToken = await getAccessToken();
       const nextHouseholds = await listHouseholds({ data: { accessToken } });
       setHouseholds(nextHouseholds);
-      const { babyId } = await getProfile({ data: { accessToken } });
+      const { babyId } = await getProfile({
+        data: { accessToken, timezone: getDeviceTimezone() },
+      });
       if (babyId) {
         const profile = await getBabyProfile({
           data: { accessToken, babyId },
@@ -192,6 +195,7 @@ export function useHouseholds({
           babyId: babyProfile.id,
           name,
           dateOfBirth,
+          timezone: getDeviceTimezone(),
         },
       });
       setBabyProfile({ ...babyProfile, ...updated });

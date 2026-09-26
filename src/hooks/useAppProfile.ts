@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../lib/auth-token";
+import { getDeviceTimezone } from "../lib/timezone";
 import { getProfile, updateProfileName } from "../server/functions";
 
 type UseAppProfileOptions = {
@@ -30,7 +31,9 @@ export function useAppProfile({
     }
 
     void getAccessToken()
-      .then((accessToken) => getProfile({ data: { accessToken } }))
+      .then((accessToken) =>
+        getProfile({ data: { accessToken, timezone: getDeviceTimezone() } }),
+      )
       .then(({ joinCode, memberRole, profileName: nextProfileName }) => {
         setHouseholdJoinCode(includeJoinCode ? (joinCode ?? null) : null);
         setHouseholdRole(memberRole);

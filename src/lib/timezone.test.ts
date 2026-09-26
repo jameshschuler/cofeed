@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getZonedDayStart, getZonedDaysAgoStart } from "./timezone";
+import {
+  formatZonedDateTime,
+  getZonedDateStart,
+  getZonedDayStart,
+  getZonedDaysAgoStart,
+} from "./timezone";
 
 describe("timezone day boundaries", () => {
   it("uses the household timezone instead of the device timezone", () => {
@@ -36,5 +41,23 @@ describe("timezone day boundaries", () => {
         1,
       ).toISOString(),
     ).toBe("2026-03-08T05:00:00.000Z");
+  });
+
+  it("finds the start of a calendar date in the given timezone", () => {
+    expect(getZonedDateStart("2026-09-25", "America/Los_Angeles").toISOString()).toBe(
+      "2026-09-25T07:00:00.000Z",
+    );
+    expect(getZonedDateStart("2026-09-25", "Pacific/Kiritimati").toISOString()).toBe(
+      "2026-09-24T10:00:00.000Z",
+    );
+    expect(
+      getZonedDateStart("2026-03-07", "America/New_York", 1).toISOString(),
+    ).toBe("2026-03-08T05:00:00.000Z");
+  });
+
+  it("formats instants as local wall-clock time", () => {
+    expect(
+      formatZonedDateTime(new Date("2026-09-25T07:14:00.000Z"), "America/Los_Angeles"),
+    ).toBe("2026-09-25 00:14");
   });
 });
