@@ -50,9 +50,9 @@ describe("timezone day boundaries", () => {
     expect(getZonedDateStart("2026-09-25", "Pacific/Kiritimati").toISOString()).toBe(
       "2026-09-24T10:00:00.000Z",
     );
-    expect(
-      getZonedDateStart("2026-03-07", "America/New_York", 1).toISOString(),
-    ).toBe("2026-03-08T05:00:00.000Z");
+    expect(getZonedDateStart("2026-03-07", "America/New_York", 1).toISOString()).toBe(
+      "2026-03-08T05:00:00.000Z",
+    );
   });
 
   it("formats instants as local wall-clock time", () => {

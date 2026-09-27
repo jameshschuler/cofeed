@@ -34,27 +34,34 @@ export const households = cofeed.table("households", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const householdMembers = cofeed.table("household_members", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  householdId: uuid("household_id")
-    .notNull()
-    .references(() => households.id, { onDelete: "cascade" }),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  role: roleEnum("role").notNull().default("caregiver"),
-  // The household created for the user at signup; at most one per user.
-  isDefault: boolean("is_default").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  uniqueIndex("household_members_household_user_unique").on(table.householdId, table.userId),
-  uniqueIndex("household_members_one_owner_per_user")
-    .on(table.userId)
-    .where(sql`${table.role} = 'owner'`),
-  uniqueIndex("household_members_one_default_per_user")
-    .on(table.userId)
-    .where(sql`${table.isDefault}`),
-]);
+export const householdMembers = cofeed.table(
+  "household_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    householdId: uuid("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    role: roleEnum("role").notNull().default("caregiver"),
+    // The household created for the user at signup; at most one per user.
+    isDefault: boolean("is_default").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("household_members_household_user_unique").on(
+      table.householdId,
+      table.userId,
+    ),
+    uniqueIndex("household_members_one_owner_per_user")
+      .on(table.userId)
+      .where(sql`${table.role} = 'owner'`),
+    uniqueIndex("household_members_one_default_per_user")
+      .on(table.userId)
+      .where(sql`${table.isDefault}`),
+  ],
+);
 
 export const babies = cofeed.table("babies", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -71,48 +78,62 @@ export const babies = cofeed.table("babies", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const feedLogs = cofeed.table("feed_logs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  babyId: uuid("baby_id")
-    .notNull()
-    .references(() => babies.id, { onDelete: "cascade" }),
-  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
-  formulaPortionVolume: real("formula_portion_volume"),
-  formulaPortionUnit: volumeUnitEnum("formula_portion_unit"),
-  breastMilkPortionVolume: real("breast_milk_portion_volume"),
-  breastMilkPortionUnit: volumeUnitEnum("breast_milk_portion_unit"),
-  source: text("source").notNull().default("cofeed"),
-  idempotencyKey: text("idempotency_key").notNull(),
-  createdByUserId: uuid("created_by_user_id")
-    .notNull()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  serverReceivedAt: timestamp("server_received_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  unique("feed_logs_baby_idempotency_key_unique").on(table.babyId, table.idempotencyKey),
-]);
+export const feedLogs = cofeed.table(
+  "feed_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    babyId: uuid("baby_id")
+      .notNull()
+      .references(() => babies.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    formulaPortionVolume: real("formula_portion_volume"),
+    formulaPortionUnit: volumeUnitEnum("formula_portion_unit"),
+    breastMilkPortionVolume: real("breast_milk_portion_volume"),
+    breastMilkPortionUnit: volumeUnitEnum("breast_milk_portion_unit"),
+    source: text("source").notNull().default("cofeed"),
+    idempotencyKey: text("idempotency_key").notNull(),
+    createdByUserId: uuid("created_by_user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    serverReceivedAt: timestamp("server_received_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("feed_logs_baby_idempotency_key_unique").on(
+      table.babyId,
+      table.idempotencyKey,
+    ),
+  ],
+);
 
-export const pumpingLogs = cofeed.table("pumping_logs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  babyId: uuid("baby_id")
-    .notNull()
-    .references(() => babies.id, { onDelete: "cascade" }),
-  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
-  volume: real("volume").notNull(),
-  unit: volumeUnitEnum("unit").notNull(),
-  source: text("source").notNull().default("cofeed"),
-  idempotencyKey: text("idempotency_key").notNull(),
-  createdByUserId: uuid("created_by_user_id")
-    .notNull()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  unique("pumping_logs_baby_idempotency_key_unique").on(table.babyId, table.idempotencyKey),
-]);
+export const pumpingLogs = cofeed.table(
+  "pumping_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    babyId: uuid("baby_id")
+      .notNull()
+      .references(() => babies.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    volume: real("volume").notNull(),
+    unit: volumeUnitEnum("unit").notNull(),
+    source: text("source").notNull().default("cofeed"),
+    idempotencyKey: text("idempotency_key").notNull(),
+    createdByUserId: uuid("created_by_user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("pumping_logs_baby_idempotency_key_unique").on(
+      table.babyId,
+      table.idempotencyKey,
+    ),
+  ],
+);
 
 export const userPreferences = cofeed.table("user_preferences", {
   userId: uuid("user_id")

@@ -35,13 +35,18 @@ export const babyProfileFieldsSchema = z.object({
 export function withDateOfBirthCheck<
   T extends z.ZodType<{ dateOfBirth: string; timezone?: string | null }>,
 >(schema: T) {
-  return schema.refine((value) => value.dateOfBirth <= getZonedTodayKey(value.timezone), {
-    message: "Date of birth cannot be in the future.",
-    path: ["dateOfBirth"],
-  });
+  return schema.refine(
+    (value) => value.dateOfBirth <= getZonedTodayKey(value.timezone),
+    {
+      message: "Date of birth cannot be in the future.",
+      path: ["dateOfBirth"],
+    },
+  );
 }
 
-export const updateBabyProfileRequestSchema = withDateOfBirthCheck(babyProfileFieldsSchema);
+export const updateBabyProfileRequestSchema = withDateOfBirthCheck(
+  babyProfileFieldsSchema,
+);
 
 export const feedResponseSchema = z.object({
   id: z.string().uuid(),

@@ -116,7 +116,10 @@ export function isValidTimezone(timeZone: string) {
 }
 
 // Today's calendar date ("YYYY-MM-DD") in the given timezone.
-export function getZonedTodayKey(timeZone: string | null | undefined, now = new Date()) {
+export function getZonedTodayKey(
+  timeZone: string | null | undefined,
+  now = new Date(),
+) {
   const zone = timeZone && isValidTimezone(timeZone) ? timeZone : "UTC";
   return formatZonedDateTime(now, zone).slice(0, 10);
 }
