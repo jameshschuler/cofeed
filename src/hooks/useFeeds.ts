@@ -15,19 +15,12 @@ import type {
   Screen,
   VolumeUnit,
 } from "../types/route-types";
-import type { FeedsActions, FeedsState } from "../components/Feeds";
-import type { PumpingActions, PumpingState } from "../components/PumpingLogList";
+import type { FeedsActions, FeedsState } from "../components/feeds-context";
+import type { PumpingActions, PumpingState } from "../components/pumping-context";
 import { useFeedData } from "./useFeedData";
-import { ML_PER_OZ, getMaxPortionVolume } from "../lib/volume";
-
-function getLocalDateTimeValue(date = new Date()) {
-  const tzOffsetMs = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - tzOffsetMs).toISOString().slice(0, 16);
-}
-
-function getLocalDateValue(date = new Date()) {
-  return getLocalDateTimeValue(date).slice(0, 10);
-}
+import { toMl } from "../lib/activity-format";
+import { toDateInputValue, toDateTimeInputValue } from "../lib/timezone";
+import { getMaxPortionVolume } from "../lib/volume";
 
 type UseFeedsOptions = {
   screen: Screen;
@@ -36,14 +29,6 @@ type UseFeedsOptions = {
   setErrorMessage: (value: string | null) => void;
   setSuccessMessage: (value: string | null) => void;
 };
-
-function convertToMl(volume: number, unit: VolumeUnit) {
-  if (unit === "oz") {
-    return volume * ML_PER_OZ;
-  }
-
-  return volume;
-}
 
 export function useFeeds({
   screen,
@@ -64,7 +49,7 @@ export function useFeeds({
   const [isSavingFeed, setIsSavingFeed] = useState(false);
   const [composeVolumeUnit, setComposeVolumeUnit] = useState<VolumeUnit | null>(null);
   const [composeStartedAt, setComposeStartedAt] = useState(() =>
-    getLocalDateTimeValue(),
+    toDateTimeInputValue(),
   );
   const [feedFormulaPortionVolume, setFeedFormulaPortionVolume] = useState("");
   const [feedBreastMilkPortionVolume, setFeedBreastMilkPortionVolume] = useState("");
@@ -148,14 +133,8 @@ export function useFeeds({
       return false;
     }
 
-    const formulaVolumeMl = convertToMl(
-      formulaPortionVolume,
-      composeVolumeUnit ?? "oz",
-    );
-    const breastMilkVolumeMl = convertToMl(
-      breastMilkPortionVolume,
-      composeVolumeUnit ?? "oz",
-    );
+    const formulaVolumeMl = toMl(formulaPortionVolume, composeVolumeUnit ?? "oz");
+    const breastMilkVolumeMl = toMl(breastMilkPortionVolume, composeVolumeUnit ?? "oz");
 
     const volumeMl = Number((formulaVolumeMl + breastMilkVolumeMl).toFixed(1));
 
@@ -193,7 +172,7 @@ export function useFeeds({
     setIsSavingFeed(false);
 
     setSuccessMessage("Feed saved.");
-    setComposeStartedAt(getLocalDateTimeValue());
+    setComposeStartedAt(toDateTimeInputValue());
     setFeedFormulaPortionVolume("");
     setFeedBreastMilkPortionVolume("");
 
@@ -250,7 +229,7 @@ export function useFeeds({
         },
       });
       setPumpingVolume("");
-      setComposeStartedAt(getLocalDateTimeValue());
+      setComposeStartedAt(toDateTimeInputValue());
       setSuccessMessage("Pumping session saved.");
       await Promise.all([
         feedData.refreshPumpingLogs(
@@ -282,7 +261,7 @@ export function useFeeds({
   function handleFilterChange(filter: FeedFilter) {
     setFeedFilter(filter);
     if (filter === "date") {
-      setSelectedDate((current) => current ?? getLocalDateValue());
+      setSelectedDate((current) => current ?? toDateInputValue());
     } else {
       setSelectedDate(null);
     }
@@ -290,7 +269,7 @@ export function useFeeds({
 
   function handleStartEditPumping(session: PumpingLogItem) {
     setEditingPumpingId(session.id);
-    setEditPumpingStartedAt(getLocalDateTimeValue(new Date(session.started_at)));
+    setEditPumpingStartedAt(toDateTimeInputValue(new Date(session.started_at)));
     setEditPumpingVolume(String(session.volume));
     setEditPumpingUnit(session.unit);
   }
@@ -381,7 +360,7 @@ export function useFeeds({
       "oz";
 
     setEditingFeedId(feed.id);
-    setEditFeedStartedAt(getLocalDateTimeValue(new Date(feed.started_at)));
+    setEditFeedStartedAt(toDateTimeInputValue(new Date(feed.started_at)));
     setEditFeedVolumeUnit(editUnit);
     setEditFeedFormulaVolume(
       feed.formula_portion_volume ? String(feed.formula_portion_volume) : "",

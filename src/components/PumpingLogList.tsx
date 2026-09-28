@@ -1,106 +1,35 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
 import { Droplet, Loader2, Pencil, Trash2 } from "lucide-react";
 import { ActivityListHeader } from "./ActivityListHeader";
+import { usePumpingContext } from "./pumping-context";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { SourceBadge } from "./ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { EmptyState } from "./ui/empty-state";
-import { ML_PER_OZ, getMaxPortionVolume } from "../lib/volume";
-import type { FeedFilter, PumpingLogItem, VolumeUnit } from "../types/route-types";
+import {
+  formatDateTime,
+  formatDayLabel,
+  formatVolume,
+  groupByLocalDay,
+  toMl,
+} from "../lib/activity-format";
+import { getMaxPortionVolume } from "../lib/volume";
+import type { PumpingLogItem } from "../types/route-types";
 
-export type PumpingState = {
-  list: {
-    filter: FeedFilter;
-    selectedDate: string | null;
-    isLoading: boolean;
-    logs: PumpingLogItem[];
-    loadError: string | null;
-  };
-  edit: {
-    editingPumpingId: string | null;
-    startedAt: string;
-    volume: string;
-    unit: VolumeUnit;
-    isUpdating: boolean;
-    deletingPumpingId: string | null;
-  };
-};
-
-export type PumpingActions = {
-  onFilterChange: (filter: FeedFilter) => void;
-  onDateChange: (date: string | null) => void;
-  onStartEdit: (session: PumpingLogItem) => void;
-  onDelete: (pumpingLogId: string) => void;
-  onEditStartedAtChange: (value: string) => void;
-  onEditVolumeChange: (value: string) => void;
-  onEditUnitChange: (value: VolumeUnit) => void;
-  onSubmitEdit: (e: FormEvent<HTMLFormElement>) => void;
-  onCancelEdit: () => void;
-};
-
-function getLocalDayKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function formatDayLabel(dayKey: string) {
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (dayKey === getLocalDayKey(today)) {
-    return "Today";
-  }
-  if (dayKey === getLocalDayKey(yesterday)) {
-    return "Yesterday";
-  }
-  const [year, month, day] = dayKey.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString([], {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function toMl(volume: number, unit: VolumeUnit) {
-  return unit === "oz" ? volume * ML_PER_OZ : volume;
-}
-
-export function PumpingLogList({
-  state,
-  actions,
-  preferredDisplayVolumeUnit,
-}: {
-  state: PumpingState;
-  actions: PumpingActions;
-  preferredDisplayVolumeUnit: VolumeUnit;
-}) {
+export function PumpingLogList() {
+  const { state, actions, displayVolumeUnit } = usePumpingContext();
   const [pendingDelete, setPendingDelete] = useState<PumpingLogItem | null>(null);
 
-  function formatVolumeMl(valueMl: number) {
-    return preferredDisplayVolumeUnit === "ml"
-      ? `${Math.round(valueMl)} ml`
-      : `${(valueMl / ML_PER_OZ).toFixed(1)} oz`;
-  }
-
-  const groups = state.list.logs.reduce<
-    Array<{ dayKey: string; totalMl: number; sessions: PumpingLogItem[] }>
-  >((result, session) => {
-    const dayKey = getLocalDayKey(new Date(session.started_at));
-    const group = result.find((item) => item.dayKey === dayKey);
-    const volumeMl = toMl(session.volume, session.unit);
-    if (group) {
-      group.totalMl += volumeMl;
-      group.sessions.push(session);
-    } else {
-      result.push({ dayKey, totalMl: volumeMl, sessions: [session] });
-    }
-    return result;
-  }, []);
+  const groups = groupByLocalDay(state.list.logs).map(({ dayKey, items }) => ({
+    dayKey,
+    sessions: items,
+    totalMl: items.reduce(
+      (sum, session) => sum + toMl(session.volume, session.unit),
+      0,
+    ),
+  }));
 
   return (
     <div className="flex min-h-[24rem] flex-none flex-col rounded-xl border bg-background/70 p-4 shadow-sm">
@@ -108,7 +37,7 @@ export function PumpingLogList({
         title="Recent pumping"
         filter={state.list.filter}
         selectedDate={state.list.selectedDate}
-        displayVolumeUnit={preferredDisplayVolumeUnit}
+        displayVolumeUnit={displayVolumeUnit}
         onFilterChange={actions.onFilterChange}
         onDateChange={actions.onDateChange}
       />
@@ -133,8 +62,8 @@ export function PumpingLogList({
             <section key={group.dayKey} className="space-y-3">
               <div className="rounded-lg border bg-muted/30 px-3 py-2">
                 <p className="text-sm font-medium text-foreground">
-                  {formatDayLabel(group.dayKey)} · {formatVolumeMl(group.totalMl)}{" "}
-                  pumped
+                  {formatDayLabel(group.dayKey)} ·{" "}
+                  {formatVolume(group.totalMl, displayVolumeUnit)} pumped
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {group.sessions.length}{" "}
@@ -149,15 +78,13 @@ export function PumpingLogList({
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-foreground">
-                        {formatVolumeMl(toMl(session.volume, session.unit))}
+                        {formatVolume(
+                          toMl(session.volume, session.unit),
+                          displayVolumeUnit,
+                        )}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(session.started_at).toLocaleString([], {
-                          month: "short",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
+                        {formatDateTime(session.started_at)}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {session.household_name} ·{" "}
@@ -204,7 +131,7 @@ export function PumpingLogList({
           className="mt-2"
         />
       )}
-      <EditPumpingDialog state={state} actions={actions} />
+      <EditPumpingDialog />
       <Dialog
         open={pendingDelete !== null}
         onOpenChange={(open) => {
@@ -245,13 +172,8 @@ export function PumpingLogList({
   );
 }
 
-function EditPumpingDialog({
-  state,
-  actions,
-}: {
-  state: PumpingState;
-  actions: PumpingActions;
-}) {
+function EditPumpingDialog() {
+  const { state, actions } = usePumpingContext();
   return (
     <Dialog
       open={state.edit.editingPumpingId !== null}

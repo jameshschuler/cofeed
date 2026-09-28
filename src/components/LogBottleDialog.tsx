@@ -5,45 +5,22 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import type { FeedsActions, FeedsState } from "./FeedLogList";
-import type { VolumeUnit } from "../types/route-types";
-import { ML_PER_OZ, getMaxPortionVolume } from "../lib/volume";
+import { useFeedsContext } from "./feeds-context";
+import { formatVolume, toMl } from "../lib/activity-format";
+import { toDateTimeInputValue } from "../lib/timezone";
+import { getMaxPortionVolume } from "../lib/volume";
 
-function getLocalDateTimeValue(date = new Date()) {
-  const tzOffsetMs = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - tzOffsetMs).toISOString().slice(0, 16);
-}
-
-export function LogBottleDialog({
-  state,
-  actions,
-  preferredDisplayVolumeUnit,
-}: {
-  state: FeedsState;
-  actions: FeedsActions;
-  preferredDisplayVolumeUnit: VolumeUnit;
-}) {
+export function LogBottleDialog() {
+  const { state, actions, displayVolumeUnit } = useFeedsContext();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"bottle" | "pumping">("bottle");
-
-  function convertToMl(volume: number, unit: VolumeUnit) {
-    return unit === "oz" ? volume * ML_PER_OZ : volume;
-  }
-
-  function formatVolumeMl(valueMl: number) {
-    if (preferredDisplayVolumeUnit === "ml") {
-      return `${Math.round(valueMl)} ml`;
-    }
-
-    return `${(valueMl / ML_PER_OZ).toFixed(1)} oz`;
-  }
 
   const composeVolumeUnit = state.compose.volumeUnit ?? "oz";
   const composeFormulaVolume = Number(state.compose.formulaPortionVolume) || 0;
   const composeBreastMilkVolume = Number(state.compose.breastMilkPortionVolume) || 0;
   const composeTotalVolumeMl =
-    convertToMl(composeFormulaVolume, composeVolumeUnit) +
-    convertToMl(composeBreastMilkVolume, composeVolumeUnit);
+    toMl(composeFormulaVolume, composeVolumeUnit) +
+    toMl(composeBreastMilkVolume, composeVolumeUnit);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     if (await actions.onSubmitNewFeed(e)) {
@@ -58,7 +35,7 @@ export function LogBottleDialog({
   }
 
   function handleOpen() {
-    actions.onComposeStartedAtChange(getLocalDateTimeValue());
+    actions.onComposeStartedAtChange(toDateTimeInputValue());
     setOpen(true);
   }
 
@@ -176,7 +153,7 @@ export function LogBottleDialog({
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Total: {formatVolumeMl(composeTotalVolumeMl)}
+                  Total: {formatVolume(composeTotalVolumeMl, displayVolumeUnit)}
                 </p>
               </>
             ) : (

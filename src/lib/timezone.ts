@@ -144,3 +144,13 @@ export function zonedLocalDateTimeToUtc(value: string, timeZone: string) {
   const [year, month, day, hour, minute] = match.slice(1).map(Number);
   return getUtcForLocalParts({ year, month, day, hour, minute, second: 0 }, timeZone);
 }
+
+// Local wall-clock value for <input type="datetime-local">, e.g. "2026-09-27T14:05".
+export function toDateTimeInputValue(date = new Date()) {
+  const tzOffsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - tzOffsetMs).toISOString().slice(0, 16);
+}
+
+export function toDateInputValue(date = new Date()) {
+  return toDateTimeInputValue(date).slice(0, 10);
+}

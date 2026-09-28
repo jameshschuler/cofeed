@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthLoading } from "../components/AuthLoading";
 import { Feeds } from "../components/Feeds";
+import { FeedsProvider } from "../components/feeds-context";
 import { LogBottleDialog } from "../components/LogBottleDialog";
 import { PrivateLayout } from "../components/PrivateLayout";
 import { RouteShell } from "../components/RouteShell";
@@ -37,27 +38,23 @@ function FeedsPage() {
   }
 
   return (
-    <RouteShell>
-      <PrivateLayout
-        screen="feeds"
-        errorMessage={errorMessage}
-        successMessage={successMessage}
-        headerAction={
-          <LogBottleDialog
-            state={feedsRouteState}
-            actions={feedsRouteActions}
-            preferredDisplayVolumeUnit={displayVolumeUnit}
-          />
-        }
-        onNavigate={goTo}
-      >
-        <Feeds
-          state={feedsRouteState}
-          actions={feedsRouteActions}
-          preferredDisplayVolumeUnit={displayVolumeUnit}
-        />
-      </PrivateLayout>
-    </RouteShell>
+    <FeedsProvider
+      state={feedsRouteState}
+      actions={feedsRouteActions}
+      displayVolumeUnit={displayVolumeUnit}
+    >
+      <RouteShell>
+        <PrivateLayout
+          screen="feeds"
+          errorMessage={errorMessage}
+          successMessage={successMessage}
+          headerAction={<LogBottleDialog />}
+          onNavigate={goTo}
+        >
+          <Feeds />
+        </PrivateLayout>
+      </RouteShell>
+    </FeedsProvider>
   );
 }
 

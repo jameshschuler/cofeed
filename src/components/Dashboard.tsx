@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { Milk } from "lucide-react";
-import type { FeedLogItem, PumpingLogItem, VolumeUnit } from "../types/route-types";
+import {
+  formatPortion,
+  formatTime,
+  formatTimeSince,
+  formatVolume,
+  getFeedVolumesMl,
+  sumFeedVolumesMl,
+} from "../lib/activity-format";
+import { useDashboardContext } from "./dashboard-context";
 import { EmptyState } from "./ui/empty-state";
 import {
   Select,
@@ -13,108 +21,27 @@ import { SourceBadge } from "./ui/badge";
 import { PumpingStats } from "./PumpingStats";
 import { WeeklyStats } from "./WeeklyStats";
 
-export type DashboardHouseholdOption = {
-  babyId: string;
-  householdName: string;
-  isPreferred: boolean;
-};
-
-export function Dashboard({
-  feeds,
-  weeklyFeeds,
-  pumpingLogs,
-  weeklyPumpingLogs,
-  isLoadingActivity,
-  isLoadingWeeklyStats,
-  weeklyFeedError,
-  weeklyPumpingError,
-  isUsingCachedActivity,
-  lastSyncedAt,
-  displayVolumeUnit,
-  householdOptions,
-  selectedBabyId,
-  onSelectBaby,
-}: {
-  feeds: FeedLogItem[];
-  weeklyFeeds: FeedLogItem[];
-  pumpingLogs: PumpingLogItem[];
-  weeklyPumpingLogs: PumpingLogItem[];
-  isLoadingActivity: boolean;
-  isLoadingWeeklyStats: boolean;
-  weeklyFeedError: string | null;
-  weeklyPumpingError: string | null;
-  isUsingCachedActivity: boolean;
-  lastSyncedAt: string | null;
-  displayVolumeUnit: VolumeUnit;
-  householdOptions: DashboardHouseholdOption[];
-  selectedBabyId: string | null;
-  onSelectBaby: (babyId: string) => void;
-}) {
+export function Dashboard() {
+  const { state, actions } = useDashboardContext();
+  const {
+    feeds,
+    weeklyFeeds,
+    pumpingLogs,
+    weeklyPumpingLogs,
+    isLoadingActivity,
+    isLoadingWeeklyStats,
+    weeklyFeedError,
+    weeklyPumpingError,
+    isUsingCachedActivity,
+    lastSyncedAt,
+    displayVolumeUnit,
+    householdOptions,
+    selectedBabyId,
+  } = state;
   const preferredOption = householdOptions.find((option) => option.isPreferred);
   const [currentTime] = useState(() => Date.now());
 
-  function toMl(value: number | null, unit: VolumeUnit | null) {
-    if (!value || !unit) {
-      return 0;
-    }
-
-    return unit === "ml" ? value : value * 29.5735;
-  }
-
-  function formatAmount(value: number | null, unit: VolumeUnit | null) {
-    if (!value || !unit) {
-      return "0";
-    }
-
-    if (displayVolumeUnit === "ml") {
-      return `${Math.round(unit === "ml" ? value : value * 29.5735)} ml`;
-    }
-
-    return `${(unit === "oz" ? value : value / 29.5735).toFixed(1)} oz`;
-  }
-
-  function formatTotal(totalMl: number) {
-    if (totalMl <= 0) {
-      return "0 ml";
-    }
-
-    return displayVolumeUnit === "ml"
-      ? `${Math.round(totalMl)} ml`
-      : `${(totalMl / 29.5735).toFixed(1)} oz`;
-  }
-
-  function formatTimeSince(value: string) {
-    const then = new Date(value).getTime();
-
-    if (!Number.isFinite(then)) {
-      return "Unknown";
-    }
-
-    const diffMs = Math.max(0, currentTime - then);
-    const minutes = Math.floor(diffMs / 60_000);
-
-    if (minutes < 1) {
-      return "just now";
-    }
-
-    if (minutes < 60) {
-      return `${minutes}m ago`;
-    }
-
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-
-    if (hours < 24) {
-      return remainingMinutes > 0
-        ? `${hours}h ${remainingMinutes}m ago`
-        : `${hours}h ago`;
-    }
-
-    const days = Math.floor(hours / 24);
-    const remainingHours = hours % 24;
-
-    return remainingHours > 0 ? `${days}d ${remainingHours}h ago` : `${days}d ago`;
-  }
+  const todayVolumes = sumFeedVolumesMl(feeds);
 
   const lastFeedStartedAt = feeds[0]?.started_at ?? null;
   const recentActivities = [
@@ -152,7 +79,7 @@ export function Dashboard({
                 value={selectedBabyId}
                 onValueChange={(value) => {
                   if (value) {
-                    onSelectBaby(value);
+                    actions.onSelectBaby(value);
                   }
                 }}
               >
@@ -197,45 +124,16 @@ export function Dashboard({
           ) : (
             <>
               <p className="text-lg font-semibold text-foreground">
-                {formatTotal(
-                  feeds.reduce(
-                    (sum, feed) =>
-                      sum +
-                      toMl(feed.formula_portion_volume, feed.formula_portion_unit) +
-                      toMl(
-                        feed.breast_milk_portion_volume,
-                        feed.breast_milk_portion_unit,
-                      ),
-                    0,
-                  ),
-                )}
+                {formatVolume(todayVolumes.totalMl, displayVolumeUnit)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Formula:{" "}
-                {formatTotal(
-                  feeds.reduce(
-                    (sum, feed) =>
-                      sum +
-                      toMl(feed.formula_portion_volume, feed.formula_portion_unit),
-                    0,
-                  ),
-                )}{" "}
-                · Breast milk:{" "}
-                {formatTotal(
-                  feeds.reduce(
-                    (sum, feed) =>
-                      sum +
-                      toMl(
-                        feed.breast_milk_portion_volume,
-                        feed.breast_milk_portion_unit,
-                      ),
-                    0,
-                  ),
-                )}
+                Formula: {formatVolume(todayVolumes.formulaMl, displayVolumeUnit)} ·
+                Breast milk:{" "}
+                {formatVolume(todayVolumes.breastMilkMl, displayVolumeUnit)}
               </p>
               {lastFeedStartedAt ? (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Last feed {formatTimeSince(lastFeedStartedAt)}
+                  Last feed {formatTimeSince(lastFeedStartedAt, currentTime)}
                 </p>
               ) : null}
             </>
@@ -281,17 +179,18 @@ export function Dashboard({
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">
                         Pumped{" "}
-                        {formatAmount(activity.session.volume, activity.session.unit)}
+                        {formatPortion(
+                          activity.session.volume,
+                          activity.session.unit,
+                          displayVolumeUnit,
+                        )}
                       </p>
                       <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
                         Pump
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(activity.session.started_at).toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
+                      {formatTime(activity.session.started_at)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {activity.session.household_name} ·{" "}
@@ -308,9 +207,7 @@ export function Dashboard({
               const hasBreastMilk =
                 !!feed.breast_milk_portion_volume &&
                 feed.breast_milk_portion_volume > 0;
-              const totalMl =
-                toMl(feed.formula_portion_volume, feed.formula_portion_unit) +
-                toMl(feed.breast_milk_portion_volume, feed.breast_milk_portion_unit);
+              const { totalMl } = getFeedVolumesMl(feed);
 
               return (
                 <div
@@ -319,16 +216,15 @@ export function Dashboard({
                 >
                   <div className="space-y-1">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-medium">{formatTotal(totalMl)}</p>
+                      <p className="text-sm font-medium">
+                        {formatVolume(totalMl, displayVolumeUnit)}
+                      </p>
                       <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
                         Feed
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(feed.started_at).toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
+                      {formatTime(feed.started_at)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {feed.household_name} · {feed.logger_name ?? "Unknown caregiver"}
@@ -339,18 +235,20 @@ export function Dashboard({
                     {hasFormula ? (
                       <p className="text-xs text-muted-foreground">
                         Formula:{" "}
-                        {formatAmount(
+                        {formatPortion(
                           feed.formula_portion_volume,
                           feed.formula_portion_unit,
+                          displayVolumeUnit,
                         )}
                       </p>
                     ) : null}
                     {hasBreastMilk ? (
                       <p className="text-xs text-muted-foreground">
                         Breast milk:{" "}
-                        {formatAmount(
+                        {formatPortion(
                           feed.breast_milk_portion_volume,
                           feed.breast_milk_portion_unit,
+                          displayVolumeUnit,
                         )}
                       </p>
                     ) : null}

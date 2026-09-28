@@ -1,4 +1,3 @@
-import { type FormEvent } from "react";
 import { ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -11,34 +10,20 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { useAuthFormContext } from "./auth-form-context";
 
-export function Signup({
-  email,
-  password,
-  confirmPassword,
-  isSubmitting,
-  errorMessage,
-  successMessage,
-  onEmailChange,
-  onPasswordChange,
-  onConfirmPasswordChange,
-  onSubmit,
-  onGoToLogin,
-  onGoToHome,
-}: {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  isSubmitting: boolean;
-  errorMessage: string | null;
-  successMessage: string | null;
-  onEmailChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-  onConfirmPasswordChange: (value: string) => void;
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  onGoToLogin: () => void;
-  onGoToHome: () => void;
-}) {
+export function Signup() {
+  const {
+    state: {
+      email,
+      password,
+      confirmPassword,
+      isSubmitting,
+      errorMessage,
+      successMessage,
+    },
+    actions,
+  } = useAuthFormContext();
   return (
     <Card className="flex h-full w-full flex-col rounded-2xl sm:mx-auto sm:h-auto sm:max-w-md sm:self-center">
       <CardHeader>
@@ -46,7 +31,7 @@ export function Signup({
         <CardDescription>Create an account with email and password.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
-        <form className="flex h-full flex-col gap-4" onSubmit={onSubmit}>
+        <form className="flex h-full flex-col gap-4" onSubmit={actions.onSignup}>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="signup-email">Email</Label>
@@ -59,7 +44,7 @@ export function Signup({
                   autoComplete="email"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(e) => onEmailChange(e.target.value)}
+                  onChange={(e) => actions.onEmailChange(e.target.value)}
                   required
                 />
               </div>
@@ -76,7 +61,7 @@ export function Signup({
                   autoComplete="new-password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => onPasswordChange(e.target.value)}
+                  onChange={(e) => actions.onPasswordChange(e.target.value)}
                   required
                 />
               </div>
@@ -93,7 +78,7 @@ export function Signup({
                   autoComplete="new-password"
                   placeholder="••••••••"
                   value={confirmPassword}
-                  onChange={(e) => onConfirmPasswordChange(e.target.value)}
+                  onChange={(e) => actions.onConfirmPasswordChange(e.target.value)}
                   required
                 />
               </div>
@@ -132,11 +117,16 @@ export function Signup({
             type="button"
             variant="outline"
             className="w-full"
-            onClick={onGoToLogin}
+            onClick={() => actions.onNavigate("login")}
           >
             Already have an account? Sign In
           </Button>
-          <Button type="button" variant="ghost" className="w-full" onClick={onGoToHome}>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={() => actions.onNavigate("home")}
+          >
             <ChevronLeft className="size-4" />
             Back to home
           </Button>
