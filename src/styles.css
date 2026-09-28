@@ -1,6 +1,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/nunito";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -59,10 +59,6 @@
 
   #root {
     min-height: 100svh;
-  }
-  .theme {
-    --font-heading: var(--font-sans);
-    --font-sans: "Inter Variable", sans-serif;
   }
   :root.dark,
   :root[data-theme="dark"] {

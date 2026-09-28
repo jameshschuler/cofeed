@@ -25,6 +25,8 @@ ChartJS.register(
   Tooltip,
 );
 
+ChartJS.defaults.font.family = '"Nunito Variable", sans-serif';
+
 const ML_PER_OZ = 29.5735;
 
 type Metric = "total" | "formula" | "breastMilk";
@@ -153,7 +155,7 @@ export function WeeklyStats({
   };
 
   return (
-    <div className="rounded-lg border bg-muted/30 px-3 py-3">
+    <div className="rounded-lg border bg-muted/30 px-3 py-3 shadow-sm">
       {isLoading ? (
         <p className="text-xs text-muted-foreground">Loading feed stats...</p>
       ) : errorMessage ? (

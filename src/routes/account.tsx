@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Account } from "../components/Account";
+import { Households } from "../components/Households";
+import {
+  HouseholdProvider,
+  type HouseholdActions,
+  type HouseholdState,
+} from "../components/household-context";
 import {
   AccountProvider,
   type AccountActions,
@@ -34,6 +40,25 @@ function AccountPage() {
     importResultMessage,
     handleImportFileChange,
     handleOpenImport,
+    joinCode,
+    isJoiningHousehold,
+    setJoinCode,
+    joinHousehold,
+    handleCopyHouseholdCode,
+    households,
+    isLoadingHouseholds,
+    leavingHouseholdId,
+    leaveHousehold,
+    membersByHousehold,
+    removingMemberKey,
+    removeMember,
+    babyProfile,
+    isSavingBabyProfile,
+    saveBabyProfile,
+    preferredPrompt,
+    settingPreferredId,
+    setPreferredHousehold,
+    dismissPreferredPrompt,
   } = useRouteScreen("account");
 
   if (!isAuthReady || !isPreferencesReady) {
@@ -85,6 +110,40 @@ function AccountPage() {
         >
           <Account />
         </AccountProvider>
+        <HouseholdProvider
+          state={
+            {
+              joinCode,
+              isJoiningHousehold,
+              households,
+              isLoadingHouseholds,
+              leavingHouseholdId,
+              membersByHousehold,
+              removingMemberKey,
+              babyProfile,
+              isSavingBabyProfile,
+              preferredPrompt,
+              settingPreferredId,
+            } satisfies HouseholdState
+          }
+          actions={
+            {
+              onJoinCodeChange: setJoinCode,
+              onJoinHousehold: () => void joinHousehold(),
+              onLeaveHousehold: (householdId) => void leaveHousehold(householdId),
+              onRemoveMember: (householdId, memberUserId) =>
+                void removeMember(householdId, memberUserId),
+              onSaveBabyProfile: (name, dateOfBirth) =>
+                void saveBabyProfile(name, dateOfBirth),
+              onCopyHouseholdCode: handleCopyHouseholdCode,
+              onSetPreferredHousehold: (householdId) =>
+                void setPreferredHousehold(householdId),
+              onDismissPreferredPrompt: dismissPreferredPrompt,
+            } satisfies HouseholdActions
+          }
+        >
+          <Households />
+        </HouseholdProvider>
       </PrivateLayout>
     </RouteShell>
   );

@@ -23,6 +23,8 @@ ChartJS.register(
   Tooltip,
 );
 
+ChartJS.defaults.font.family = '"Nunito Variable", sans-serif';
+
 const ML_PER_OZ = 29.5735;
 
 function toMl(value: number, unit: VolumeUnit) {
@@ -95,7 +97,7 @@ export function PumpingStats({
   };
 
   return (
-    <section className="rounded-lg border bg-muted/30 px-3 py-3">
+    <section className="rounded-lg border bg-muted/30 px-3 py-3 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">Pumps · last 7 days</p>
         {!isLoading && !errorMessage ? (

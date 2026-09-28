@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Badge } from "./ui/badge";
 import { EmptyState } from "./ui/empty-state";
 
 export function Households() {
@@ -22,15 +23,31 @@ export function Households() {
     ).values(),
   );
 
+  const ownedHousehold = uniqueHouseholds.find(
+    (household) => household.member_role === "owner",
+  );
+  const canEditBaby = state.babyProfile?.memberRole === "owner";
+  const babyHouseholdName =
+    uniqueHouseholds.length > 1
+      ? uniqueHouseholds.find(
+          (household) => household.household_id === state.babyProfile?.householdId,
+        )?.household_name
+      : undefined;
+
   useEffect(() => {
     setBabyName(state.babyProfile?.name ?? "");
     setBabyDateOfBirth(state.babyProfile?.dateOfBirth ?? "");
   }, [state.babyProfile]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-2 sm:gap-8 sm:py-3">
-      <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
+    <div className="flex flex-col gap-6 py-2 sm:gap-8 sm:py-3">
+      <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
         <p className="text-sm font-medium text-foreground">Your households</p>
+        {uniqueHouseholds.length > 1 ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            New feeds and pumping sessions are logged to your preferred household.
+          </p>
+        ) : null}
         <div className="mt-5 space-y-3">
           {state.isLoadingHouseholds ? (
             <p className="text-sm text-muted-foreground">Loading...</p>
@@ -40,35 +57,57 @@ export function Households() {
                 <div key={`${household.household_id}-${household.member_role}`}>
                   <div className="flex items-center justify-between gap-3 rounded-md border border-border/70 bg-background/60 px-4 py-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {household.household_name}
+                      <p className="flex items-center gap-2 text-sm font-medium">
+                        <span className="truncate">{household.household_name}</span>
+                        {household.is_preferred && uniqueHouseholds.length > 1 ? (
+                          <Badge className="border-primary/40 text-primary">
+                            Preferred
+                          </Badge>
+                        ) : null}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {household.member_role} · {household.join_code}
                       </p>
                     </div>
-                    {household.member_role === "owner" ? (
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Owner
-                      </span>
-                    ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        disabled={state.leavingHouseholdId === household.household_id}
-                        onClick={() =>
-                          setPendingConfirmation({
-                            type: "leave",
-                            householdId: household.household_id,
-                          })
-                        }
-                      >
-                        {state.leavingHouseholdId === household.household_id
-                          ? "Leaving"
-                          : "Leave"}
-                      </Button>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1">
+                      {!household.is_preferred ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={state.settingPreferredId !== null}
+                          onClick={() =>
+                            actions.onSetPreferredHousehold(household.household_id)
+                          }
+                        >
+                          {state.settingPreferredId === household.household_id
+                            ? "Saving"
+                            : "Set as preferred"}
+                        </Button>
+                      ) : null}
+                      {household.member_role === "owner" ? (
+                        <span className="px-2 text-xs font-medium text-muted-foreground">
+                          Owner
+                        </span>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          disabled={state.leavingHouseholdId === household.household_id}
+                          onClick={() =>
+                            setPendingConfirmation({
+                              type: "leave",
+                              householdId: household.household_id,
+                            })
+                          }
+                        >
+                          {state.leavingHouseholdId === household.household_id
+                            ? "Leaving"
+                            : "Leave"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   {household.member_role === "owner" ? (
                     <div className="space-y-2 rounded-md border border-dashed px-3 py-2">
@@ -128,28 +167,38 @@ export function Households() {
         </div>
       </section>
 
-      {state.householdRole === "owner" ? (
-        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
+      {ownedHousehold ? (
+        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
           <p className="text-sm font-medium text-foreground">Invite members</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Share this code to invite people to {ownedHousehold.household_name}.
+          </p>
           <div className="mt-5 space-y-3">
             <Label>Household code</Label>
             <button
               type="button"
               className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-3 py-3 text-left text-sm font-medium tracking-[0.2em] hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              disabled={!state.householdJoinCode}
-              onClick={actions.onCopyHouseholdCode}
+              onClick={() => actions.onCopyHouseholdCode(ownedHousehold.join_code)}
               title="Copy household code"
             >
-              <span>{state.householdJoinCode ?? "Loading"}</span>
+              <span>{ownedHousehold.join_code}</span>
               <Clipboard className="size-4" />
             </button>
           </div>
         </section>
       ) : null}
 
-      <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
-        <p className="text-sm font-medium text-foreground">Baby profile</p>
-        {state.babyProfile ? (
+      <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
+        <p className="text-sm font-medium text-foreground">
+          Baby profile
+          {babyHouseholdName ? (
+            <span className="font-normal text-muted-foreground">
+              {" "}
+              · {babyHouseholdName}
+            </span>
+          ) : null}
+        </p>
+        {state.babyProfile && canEditBaby ? (
           <form
             className="mt-5 space-y-3"
             onSubmit={(event) => {
@@ -162,7 +211,6 @@ export function Households() {
               <Input
                 id="baby-name"
                 value={babyName}
-                disabled={state.householdRole !== "owner"}
                 onChange={(event) => setBabyName(event.target.value)}
               />
             </div>
@@ -172,22 +220,45 @@ export function Households() {
                 id="baby-date-of-birth"
                 type="date"
                 value={babyDateOfBirth}
-                disabled={state.householdRole !== "owner"}
                 onChange={(event) => setBabyDateOfBirth(event.target.value)}
               />
             </div>
-            {state.householdRole === "owner" ? (
-              <Button type="submit" disabled={state.isSavingBabyProfile}>
-                {state.isSavingBabyProfile ? "Saving" : "Save"}
-              </Button>
-            ) : null}
+            <Button type="submit" disabled={state.isSavingBabyProfile}>
+              {state.isSavingBabyProfile ? "Saving" : "Save"}
+            </Button>
           </form>
+        ) : state.babyProfile ? (
+          <div className="mt-5 space-y-3">
+            <dl className="space-y-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Name</dt>
+                <dd className="font-medium text-foreground">
+                  {state.babyProfile.name}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Date of birth</dt>
+                <dd className="font-medium text-foreground">
+                  {new Date(
+                    `${state.babyProfile.dateOfBirth}T00:00:00`,
+                  ).toLocaleDateString([], {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </dd>
+              </div>
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              Only the household owner can edit the baby profile.
+            </p>
+          </div>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">Loading baby profile...</p>
         )}
       </section>
 
-      <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
+      <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
         <p className="text-sm font-medium text-foreground">Join a household</p>
         <div className="mt-5 space-y-3">
           <Label htmlFor="household-join-code">Household code</Label>
@@ -259,6 +330,46 @@ export function Households() {
               }}
             >
               {pendingConfirmation?.type === "remove" ? "Remove" : "Leave"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={state.preferredPrompt !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            actions.onDismissPreferredPrompt();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Make {state.preferredPrompt?.householdName} your preferred household?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            New feeds and pumping sessions you log, from the form or the chat, will go
+            to this household. You can change this anytime in your households list.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={actions.onDismissPreferredPrompt}
+            >
+              Not now
+            </Button>
+            <Button
+              type="button"
+              disabled={state.settingPreferredId !== null}
+              onClick={() => {
+                if (state.preferredPrompt) {
+                  actions.onSetPreferredHousehold(state.preferredPrompt.householdId);
+                }
+              }}
+            >
+              {state.settingPreferredId ? "Saving" : "Set as preferred"}
             </Button>
           </div>
         </DialogContent>

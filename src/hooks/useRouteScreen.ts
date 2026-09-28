@@ -17,7 +17,9 @@ const SCREEN_TO_PATH: Record<Screen, string> = {
   signup: "/signup",
   "reset-password": "/reset-password",
   dashboard: "/dashboard",
+  chat: "/chat",
   feeds: "/feeds",
+  pumping: "/pumping",
   households: "/households",
   account: "/account",
 };
@@ -45,7 +47,7 @@ export function useRouteScreen(screen: Screen) {
   const profile = useAppProfile({
     userId,
     enabled: screen === "dashboard" || screen === "households" || screen === "account",
-    includeJoinCode: screen === "households",
+    includeJoinCode: false,
     setErrorMessage: auth.setErrorMessage,
     setSuccessMessage: auth.setSuccessMessage,
   });
@@ -84,17 +86,13 @@ export function useRouteScreen(screen: Screen) {
     isPreferencesReady: preferences.isPreferencesReady,
     isSavingPreferences: preferences.isSavingPreferences,
     handleDisplayVolumeUnitChange: preferences.updateDisplayVolumeUnit,
-    householdJoinCode: profile.householdJoinCode,
-    householdRole: profile.householdRole,
     profileName: profile.profileName,
     isSavingProfileName: profile.isSavingProfileName,
     handleSaveProfileName: profile.saveProfileName,
     isDarkMode: theme.isDarkMode,
     handleToggleDarkMode: theme.toggleTheme,
-    handleCopyHouseholdCode: () => {
-      if (profile.householdJoinCode) {
-        clipboard.copy(profile.householdJoinCode, "Household code copied.");
-      }
+    handleCopyHouseholdCode: (joinCode: string) => {
+      clipboard.copy(joinCode, "Household code copied.");
     },
     handleExportData: dataExport.exportData,
     isImporting: dataImport.isImporting,

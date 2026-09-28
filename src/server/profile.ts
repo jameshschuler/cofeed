@@ -11,6 +11,7 @@ import {
 } from "../db/schema";
 import { getZonedTodayKey, isValidTimezone } from "../lib/timezone";
 import { authenticated, authenticate } from "./auth";
+import { ensurePreferredHousehold } from "./preferred-household";
 
 function isUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== "object") {
@@ -27,14 +28,7 @@ async function findOrCreateDefaultHousehold(
   timezone: string | null | undefined,
 ) {
   return db.transaction(async (tx) => {
-    const [membership] = await tx
-      .select({ householdId: householdMembers.householdId })
-      .from(householdMembers)
-      .where(
-        and(eq(householdMembers.userId, userId), eq(householdMembers.isDefault, true)),
-      )
-      .limit(1);
-    let householdId = membership?.householdId;
+    let householdId = await ensurePreferredHousehold(tx, userId);
 
     if (!householdId) {
       const [household] = await tx
@@ -100,9 +94,13 @@ export const getProfile = createServerFn({ method: "GET" })
       )
       .limit(1);
     const [household] = await db
-      .select({ joinCode: households.joinCode })
+      .select({ joinCode: households.joinCode, name: households.name })
       .from(households)
       .where(eq(households.id, householdId));
+    const memberships = await db
+      .select({ householdId: householdMembers.householdId })
+      .from(householdMembers)
+      .where(eq(householdMembers.userId, userId));
 
     const [profile] = await db
       .select({ profileName: userPreferences.profileName, email: authUsers.email })
@@ -113,6 +111,8 @@ export const getProfile = createServerFn({ method: "GET" })
     return {
       householdId,
       babyId,
+      householdName: household.name,
+      householdCount: memberships.length,
       joinCode: household.joinCode,
       memberRole: currentMembership?.role ?? "owner",
       profileName: profile?.profileName ?? profile?.email?.split("@")[0] ?? "Caregiver",

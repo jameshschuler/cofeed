@@ -17,6 +17,18 @@ export type FeedLogItem = {
 
 export type FeedFilter = "today" | "yesterday" | "date";
 
+export type TextLogEntry = {
+  kind: "feed" | "pumping";
+  id: string;
+  startedAt: string;
+  summary: string;
+};
+
+export type TextLogResult = {
+  created: TextLogEntry[];
+  notUnderstood: string | null;
+};
+
 export type PumpingLogItem = {
   id: string;
   started_at: string;
@@ -34,16 +46,21 @@ export type Screen =
   | "signup"
   | "reset-password"
   | "dashboard"
+  | "chat"
   | "feeds"
+  | "pumping"
   | "households"
   | "account";
 
-export type PrivateScreen = "dashboard" | "feeds" | "households" | "account";
+export type PrivateScreen =
+  "dashboard" | "chat" | "feeds" | "pumping" | "households" | "account";
 
 export function isPrivateScreen(screen: Screen): screen is PrivateScreen {
   return (
     screen === "dashboard" ||
+    screen === "chat" ||
     screen === "feeds" ||
+    screen === "pumping" ||
     screen === "households" ||
     screen === "account"
   );

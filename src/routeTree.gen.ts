@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as FeedsRouteImport } from './routes/feeds'
 import { Route as HouseholdsRouteImport } from './routes/households'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PumpingRouteImport } from './routes/pumping'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 
@@ -26,6 +28,11 @@ const IndexRoute = IndexRouteImport.update({
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -48,6 +55,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PumpingRoute = PumpingRouteImport.update({
+  id: '/pumping',
+  path: '/pumping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -62,20 +74,24 @@ const SignupRoute = SignupRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/chat': typeof ChatRoute
   '/dashboard': typeof DashboardRoute
   '/feeds': typeof FeedsRoute
   '/households': typeof HouseholdsRoute
   '/login': typeof LoginRoute
+  '/pumping': typeof PumpingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/chat': typeof ChatRoute
   '/dashboard': typeof DashboardRoute
   '/feeds': typeof FeedsRoute
   '/households': typeof HouseholdsRoute
   '/login': typeof LoginRoute
+  '/pumping': typeof PumpingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
 }
@@ -83,10 +99,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/chat': typeof ChatRoute
   '/dashboard': typeof DashboardRoute
   '/feeds': typeof FeedsRoute
   '/households': typeof HouseholdsRoute
   '/login': typeof LoginRoute
+  '/pumping': typeof PumpingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
 }
@@ -95,30 +113,36 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/account'
+    | '/chat'
     | '/dashboard'
     | '/feeds'
     | '/households'
     | '/login'
+    | '/pumping'
     | '/reset-password'
     | '/signup'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account'
+    | '/chat'
     | '/dashboard'
     | '/feeds'
     | '/households'
     | '/login'
+    | '/pumping'
     | '/reset-password'
     | '/signup'
   id:
     | '__root__'
     | '/'
     | '/account'
+    | '/chat'
     | '/dashboard'
     | '/feeds'
     | '/households'
     | '/login'
+    | '/pumping'
     | '/reset-password'
     | '/signup'
   fileRoutesById: FileRoutesById
@@ -126,10 +150,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
+  ChatRoute: typeof ChatRoute
   DashboardRoute: typeof DashboardRoute
   FeedsRoute: typeof FeedsRoute
   HouseholdsRoute: typeof HouseholdsRoute
   LoginRoute: typeof LoginRoute
+  PumpingRoute: typeof PumpingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
 }
@@ -148,6 +174,13 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -178,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pumping': {
+      id: '/pumping'
+      path: '/pumping'
+      fullPath: '/pumping'
+      preLoaderRoute: typeof PumpingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -198,10 +238,12 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
+  ChatRoute: ChatRoute,
   DashboardRoute: DashboardRoute,
   FeedsRoute: FeedsRoute,
   HouseholdsRoute: HouseholdsRoute,
   LoginRoute: LoginRoute,
+  PumpingRoute: PumpingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
 }

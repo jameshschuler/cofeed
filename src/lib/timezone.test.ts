@@ -4,6 +4,7 @@ import {
   getZonedDateStart,
   getZonedDayStart,
   getZonedDaysAgoStart,
+  zonedLocalDateTimeToUtc,
 } from "./timezone";
 
 describe("timezone day boundaries", () => {
@@ -59,5 +60,22 @@ describe("timezone day boundaries", () => {
     expect(
       formatZonedDateTime(new Date("2026-09-25T07:14:00.000Z"), "America/Los_Angeles"),
     ).toBe("2026-09-25 00:14");
+  });
+
+  it("converts local wall-clock time to UTC, including across DST", () => {
+    expect(
+      zonedLocalDateTimeToUtc("2026-09-25T14:00", "America/Los_Angeles")?.toISOString(),
+    ).toBe("2026-09-25T21:00:00.000Z");
+    expect(
+      zonedLocalDateTimeToUtc("2026-03-08T01:30", "America/New_York")?.toISOString(),
+    ).toBe("2026-03-08T06:30:00.000Z");
+    expect(
+      zonedLocalDateTimeToUtc("2026-03-08T03:30", "America/New_York")?.toISOString(),
+    ).toBe("2026-03-08T07:30:00.000Z");
+  });
+
+  it("rejects malformed local times", () => {
+    expect(zonedLocalDateTimeToUtc("2pm", "America/New_York")).toBeNull();
+    expect(zonedLocalDateTimeToUtc("2026-09-25 14:00", "America/New_York")).toBeNull();
   });
 });

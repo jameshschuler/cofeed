@@ -3,17 +3,22 @@ import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getAccessToken } from "../lib/auth-token";
 import { createFeed, deleteFeed, updateFeed } from "../server/feeds";
-import { createPumpingLog } from "../server/pumping";
-import type { FeedFilter, FeedLogItem, Screen, VolumeUnit } from "../types/route-types";
+import {
+  createPumpingLog,
+  deletePumpingLog,
+  updatePumpingLog,
+} from "../server/pumping";
+import type {
+  FeedFilter,
+  FeedLogItem,
+  PumpingLogItem,
+  Screen,
+  VolumeUnit,
+} from "../types/route-types";
 import type { FeedsActions, FeedsState } from "../components/Feeds";
+import type { PumpingActions, PumpingState } from "../components/PumpingLogList";
 import { useFeedData } from "./useFeedData";
-
-const ML_PER_OZ = 29.5735;
-const MAX_PORTION_OZ = 60;
-
-function getMaxPortionVolume(unit: VolumeUnit) {
-  return unit === "oz" ? MAX_PORTION_OZ : Math.round(MAX_PORTION_OZ * ML_PER_OZ);
-}
+import { ML_PER_OZ, getMaxPortionVolume } from "../lib/volume";
 
 function getLocalDateTimeValue(date = new Date()) {
   const tzOffsetMs = date.getTimezoneOffset() * 60_000;
@@ -74,6 +79,14 @@ export function useFeeds({
   const [editFeedBreastMilkVolume, setEditFeedBreastMilkVolume] = useState("");
   const [isUpdatingFeed, setIsUpdatingFeed] = useState(false);
   const [deletingFeedId, setDeletingFeedId] = useState<string | null>(null);
+  const [editingPumpingId, setEditingPumpingId] = useState<string | null>(null);
+  const [editPumpingStartedAt, setEditPumpingStartedAt] = useState("");
+  const [editPumpingVolume, setEditPumpingVolume] = useState("");
+  const [editPumpingUnit, setEditPumpingUnit] = useState<VolumeUnit>(
+    preferredDisplayVolumeUnit ?? "oz",
+  );
+  const [isUpdatingPumping, setIsUpdatingPumping] = useState(false);
+  const [deletingPumpingId, setDeletingPumpingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (preferredDisplayVolumeUnit) {
@@ -257,6 +270,109 @@ export function useFeeds({
     }
   }
 
+  async function refreshActivity(babyId: string) {
+    const filter = screen === "dashboard" ? "today" : feedFilter;
+    await Promise.all([
+      feedData.refreshFeedLogs(babyId, filter),
+      feedData.refreshPumpingLogs(babyId, filter),
+      feedData.refreshWeeklyStats(babyId, { showLoading: false }),
+    ]);
+  }
+
+  function handleFilterChange(filter: FeedFilter) {
+    setFeedFilter(filter);
+    if (filter === "date") {
+      setSelectedDate((current) => current ?? getLocalDateValue());
+    } else {
+      setSelectedDate(null);
+    }
+  }
+
+  function handleStartEditPumping(session: PumpingLogItem) {
+    setEditingPumpingId(session.id);
+    setEditPumpingStartedAt(getLocalDateTimeValue(new Date(session.started_at)));
+    setEditPumpingVolume(String(session.volume));
+    setEditPumpingUnit(session.unit);
+  }
+
+  async function handleUpdatePumping(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const babyId = feedData.activeBabyId;
+    if (!babyId || !editingPumpingId) {
+      return;
+    }
+
+    const startedAt = new Date(editPumpingStartedAt);
+    const volume = Number(editPumpingVolume);
+    const maxVolume = getMaxPortionVolume(editPumpingUnit);
+    if (
+      Number.isNaN(startedAt.getTime()) ||
+      !Number.isFinite(volume) ||
+      volume <= 0 ||
+      volume > maxVolume
+    ) {
+      setErrorMessage(
+        `Enter a valid time and a pumped amount up to ${maxVolume} ${editPumpingUnit}.`,
+      );
+      return;
+    }
+
+    setIsUpdatingPumping(true);
+    try {
+      await updatePumpingLog({
+        data: {
+          accessToken: await getAccessToken(),
+          pumpingLogId: editingPumpingId,
+          startedAt: startedAt.toISOString(),
+          volume,
+          unit: editPumpingUnit,
+        },
+      });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to update pumping session.",
+      );
+      return;
+    } finally {
+      setIsUpdatingPumping(false);
+    }
+
+    setEditingPumpingId(null);
+    setSuccessMessage("Pumping session updated.");
+    await refreshActivity(babyId);
+  }
+
+  async function handleDeletePumping(pumpingLogId: string) {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const babyId = feedData.activeBabyId;
+    if (!babyId) {
+      return;
+    }
+
+    setDeletingPumpingId(pumpingLogId);
+    try {
+      await deletePumpingLog({
+        data: { accessToken: await getAccessToken(), pumpingLogId },
+      });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to delete pumping session.",
+      );
+      return;
+    } finally {
+      setDeletingPumpingId(null);
+    }
+
+    setEditingPumpingId(null);
+    setSuccessMessage("Pumping session deleted.");
+    await refreshActivity(babyId);
+  }
+
   function handleStartEditFeed(feed: FeedLogItem) {
     const editUnit =
       feed.formula_portion_unit ??
@@ -394,6 +510,7 @@ export function useFeeds({
       pumpingVolume,
       isSaving: isSavingFeed,
       isSavingPumping,
+      targetHouseholdName: feedData.targetHouseholdName,
     },
     list: {
       filter: feedFilter,
@@ -425,14 +542,7 @@ export function useFeeds({
     onSubmitPumping: (e) => {
       return handleAddPumping(e);
     },
-    onFeedFilterChange: (filter) => {
-      setFeedFilter(filter);
-      if (filter === "date") {
-        setSelectedDate((current) => current ?? getLocalDateValue());
-      } else {
-        setSelectedDate(null);
-      }
-    },
+    onFeedFilterChange: handleFilterChange,
     onFeedDateChange: setSelectedDate,
     onStartEditFeed: handleStartEditFeed,
     onDeleteFeed: (feedId) => {
@@ -448,9 +558,45 @@ export function useFeeds({
     onCancelFeedEdit: () => setEditingFeedId(null),
   };
 
+  const pumpingRouteState: PumpingState = {
+    list: {
+      filter: feedFilter,
+      selectedDate,
+      isLoading: feedData.isLoadingFeeds,
+      logs: feedData.pumpingLogs,
+      loadError: feedData.feedsLoadError,
+    },
+    edit: {
+      editingPumpingId,
+      startedAt: editPumpingStartedAt,
+      volume: editPumpingVolume,
+      unit: editPumpingUnit,
+      isUpdating: isUpdatingPumping,
+      deletingPumpingId,
+    },
+  };
+
+  const pumpingRouteActions: PumpingActions = {
+    onFilterChange: handleFilterChange,
+    onDateChange: setSelectedDate,
+    onStartEdit: handleStartEditPumping,
+    onDelete: (pumpingLogId) => {
+      void handleDeletePumping(pumpingLogId);
+    },
+    onEditStartedAtChange: setEditPumpingStartedAt,
+    onEditVolumeChange: setEditPumpingVolume,
+    onEditUnitChange: setEditPumpingUnit,
+    onSubmitEdit: (e) => {
+      void handleUpdatePumping(e);
+    },
+    onCancelEdit: () => setEditingPumpingId(null),
+  };
+
   return {
     feedsRouteState,
     feedsRouteActions,
+    pumpingRouteState,
+    pumpingRouteActions,
     weeklyFeeds: feedData.weeklyFeedLogs,
     pumpingLogs: feedData.pumpingLogs,
     weeklyPumpingLogs: feedData.weeklyPumpingLogs,
@@ -458,6 +604,8 @@ export function useFeeds({
     weeklyFeedError: feedData.weeklyFeedError,
     weeklyPumpingError: feedData.weeklyPumpingError,
     isUsingCachedActivity: feedData.isUsingCachedActivity,
+    dashboardBabyId: feedData.viewBabyId ?? feedData.activeBabyId,
+    setDashboardBabyId: feedData.setViewBabyId,
     lastSyncedAt: feedData.lastSyncedAt,
   };
 }

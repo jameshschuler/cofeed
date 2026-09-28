@@ -3,13 +3,12 @@ import type {
   BabyProfile,
   HouseholdMember,
   HouseholdMembership,
+  PreferredHouseholdPrompt,
 } from "../hooks/useHouseholds";
 
 export type HouseholdState = {
   joinCode: string;
   isJoiningHousehold: boolean;
-  householdJoinCode: string | null;
-  householdRole: "owner" | "caregiver" | "viewer" | null;
   households: HouseholdMembership[];
   isLoadingHouseholds: boolean;
   leavingHouseholdId: string | null;
@@ -17,6 +16,8 @@ export type HouseholdState = {
   removingMemberKey: string | null;
   babyProfile: BabyProfile | null;
   isSavingBabyProfile: boolean;
+  preferredPrompt: PreferredHouseholdPrompt | null;
+  settingPreferredId: string | null;
 };
 
 export type HouseholdActions = {
@@ -25,7 +26,9 @@ export type HouseholdActions = {
   onLeaveHousehold: (householdId: string) => void;
   onRemoveMember: (householdId: string, memberUserId: string) => void;
   onSaveBabyProfile: (name: string, dateOfBirth: string) => void;
-  onCopyHouseholdCode: () => void;
+  onCopyHouseholdCode: (joinCode: string) => void;
+  onSetPreferredHousehold: (householdId: string) => void;
+  onDismissPreferredPrompt: () => void;
 };
 
 const HouseholdContext = createContext<{

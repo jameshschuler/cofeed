@@ -34,6 +34,17 @@ export function writeLastBabyId(userId: string, babyId: string) {
   }
 }
 
+export function clearLastBabyId(userId: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(getBabyKey(userId));
+  } catch {
+    // Storage may be unavailable; the next profile load sets it again.
+  }
+}
+
 export function readActivityCache(
   userId: string,
   babyId: string,

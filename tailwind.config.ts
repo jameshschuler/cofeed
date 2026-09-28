@@ -1,11 +1,15 @@
 import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 export default {
   darkMode: ["class"],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Nunito Variable"', ...defaultTheme.fontFamily.sans],
+      },
       colors: {
         border: "var(--border)",
         input: "var(--input)",

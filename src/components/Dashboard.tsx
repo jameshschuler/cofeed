@@ -2,33 +2,55 @@ import { useState } from "react";
 import { Milk } from "lucide-react";
 import type { FeedLogItem, PumpingLogItem, VolumeUnit } from "../types/route-types";
 import { EmptyState } from "./ui/empty-state";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { SourceBadge } from "./ui/badge";
 import { PumpingStats } from "./PumpingStats";
 import { WeeklyStats } from "./WeeklyStats";
+
+export type DashboardHouseholdOption = {
+  babyId: string;
+  householdName: string;
+  isPreferred: boolean;
+};
 
 export function Dashboard({
   feeds,
   weeklyFeeds,
   pumpingLogs,
   weeklyPumpingLogs,
+  isLoadingActivity,
   isLoadingWeeklyStats,
   weeklyFeedError,
   weeklyPumpingError,
   isUsingCachedActivity,
   lastSyncedAt,
   displayVolumeUnit,
+  householdOptions,
+  selectedBabyId,
+  onSelectBaby,
 }: {
   feeds: FeedLogItem[];
   weeklyFeeds: FeedLogItem[];
   pumpingLogs: PumpingLogItem[];
   weeklyPumpingLogs: PumpingLogItem[];
+  isLoadingActivity: boolean;
   isLoadingWeeklyStats: boolean;
   weeklyFeedError: string | null;
   weeklyPumpingError: string | null;
   isUsingCachedActivity: boolean;
   lastSyncedAt: string | null;
   displayVolumeUnit: VolumeUnit;
+  householdOptions: DashboardHouseholdOption[];
+  selectedBabyId: string | null;
+  onSelectBaby: (babyId: string) => void;
 }) {
+  const preferredOption = householdOptions.find((option) => option.isPreferred);
   const [currentTime] = useState(() => Date.now());
 
   function toMl(value: number | null, unit: VolumeUnit | null) {
@@ -109,6 +131,51 @@ export function Dashboard({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
       <div className="flex flex-col bg-background/40 p-3 sm:p-4">
+        {householdOptions.length > 1 ? (
+          <div className="mb-3 flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              <span
+                id="dashboard-household-label"
+                className="text-xs font-medium text-muted-foreground"
+              >
+                Household
+              </span>
+              <Select
+                items={Object.fromEntries(
+                  householdOptions.map((option) => [
+                    option.babyId,
+                    option.isPreferred
+                      ? `${option.householdName} (preferred)`
+                      : option.householdName,
+                  ]),
+                )}
+                value={selectedBabyId}
+                onValueChange={(value) => {
+                  if (value) {
+                    onSelectBaby(value);
+                  }
+                }}
+              >
+                <SelectTrigger aria-labelledby="dashboard-household-label">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {householdOptions.map((option) => (
+                    <SelectItem key={option.babyId} value={option.babyId}>
+                      {option.householdName}
+                      {option.isPreferred ? " (preferred)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {preferredOption && selectedBabyId !== preferredOption.babyId ? (
+              <p className="text-right text-xs text-muted-foreground">
+                New entries are still logged to {preferredOption.householdName}.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {isUsingCachedActivity ? (
           <p className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
             Offline · showing recent data
@@ -120,43 +187,59 @@ export function Dashboard({
               : ""}
           </p>
         ) : null}
-        <div className="rounded-lg border bg-muted/30 px-3 py-2">
+        <div className="rounded-lg border bg-muted/30 px-3 py-2 shadow-sm">
           <p className="text-xs text-muted-foreground">Today's total</p>
-          <p className="text-lg font-semibold text-foreground">
-            {formatTotal(
-              feeds.reduce(
-                (sum, feed) =>
-                  sum +
-                  toMl(feed.formula_portion_volume, feed.formula_portion_unit) +
-                  toMl(feed.breast_milk_portion_volume, feed.breast_milk_portion_unit),
-                0,
-              ),
-            )}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Formula:{" "}
-            {formatTotal(
-              feeds.reduce(
-                (sum, feed) =>
-                  sum + toMl(feed.formula_portion_volume, feed.formula_portion_unit),
-                0,
-              ),
-            )}{" "}
-            · Breast milk:{" "}
-            {formatTotal(
-              feeds.reduce(
-                (sum, feed) =>
-                  sum +
-                  toMl(feed.breast_milk_portion_volume, feed.breast_milk_portion_unit),
-                0,
-              ),
-            )}
-          </p>
-          {lastFeedStartedAt ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Last feed {formatTimeSince(lastFeedStartedAt)}
-            </p>
-          ) : null}
+          {isLoadingActivity ? (
+            <div aria-hidden="true" className="animate-pulse space-y-2 py-1">
+              <div className="h-6 w-24 rounded bg-muted" />
+              <div className="h-3 w-48 rounded bg-muted" />
+            </div>
+          ) : (
+            <>
+              <p className="text-lg font-semibold text-foreground">
+                {formatTotal(
+                  feeds.reduce(
+                    (sum, feed) =>
+                      sum +
+                      toMl(feed.formula_portion_volume, feed.formula_portion_unit) +
+                      toMl(
+                        feed.breast_milk_portion_volume,
+                        feed.breast_milk_portion_unit,
+                      ),
+                    0,
+                  ),
+                )}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Formula:{" "}
+                {formatTotal(
+                  feeds.reduce(
+                    (sum, feed) =>
+                      sum +
+                      toMl(feed.formula_portion_volume, feed.formula_portion_unit),
+                    0,
+                  ),
+                )}{" "}
+                · Breast milk:{" "}
+                {formatTotal(
+                  feeds.reduce(
+                    (sum, feed) =>
+                      sum +
+                      toMl(
+                        feed.breast_milk_portion_volume,
+                        feed.breast_milk_portion_unit,
+                      ),
+                    0,
+                  ),
+                )}
+              </p>
+              {lastFeedStartedAt ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Last feed {formatTimeSince(lastFeedStartedAt)}
+                </p>
+              ) : null}
+            </>
+          )}
         </div>
         <div className="mt-3">
           <WeeklyStats
@@ -175,14 +258,25 @@ export function Dashboard({
           />
         </div>
         <p className="mt-4 text-sm font-medium text-foreground">Recent activity</p>
-        {recentActivities.length > 0 ? (
+        {isLoadingActivity ? (
+          <div className="mt-3 space-y-3 pr-1">
+            <span className="sr-only">Loading recent activity…</span>
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                aria-hidden="true"
+                className="h-20 animate-pulse rounded-lg border bg-muted/20"
+              />
+            ))}
+          </div>
+        ) : recentActivities.length > 0 ? (
           <div className="mt-3 space-y-3 pr-1">
             {recentActivities.map((activity) => {
               if (activity.type === "pumping") {
                 return (
                   <div
                     key={`pumping-${activity.session.id}`}
-                    className="space-y-1 rounded-lg border px-4 py-3"
+                    className="space-y-1 rounded-lg border px-4 py-3 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">
@@ -219,7 +313,10 @@ export function Dashboard({
                 toMl(feed.breast_milk_portion_volume, feed.breast_milk_portion_unit);
 
               return (
-                <div key={feed.id} className="space-y-2 rounded-lg border px-4 py-3">
+                <div
+                  key={feed.id}
+                  className="space-y-2 rounded-lg border px-4 py-3 shadow-sm"
+                >
                   <div className="space-y-1">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-sm font-medium">{formatTotal(totalMl)}</p>

@@ -22,6 +22,7 @@ import {
   getRangeBounds,
   resolveRangeTimezone,
 } from "./activity-range";
+import { insertFeed } from "./activity-writes";
 
 const updateFeedRequestSchema = z.object({
   accessToken: z.string().min(1),
@@ -101,34 +102,16 @@ export const createFeed = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
     await requireBabyWriteAccess(data.babyId, userId);
-    const [existing] = await db
-      .select()
-      .from(feedLogs)
-      .where(
-        and(
-          eq(feedLogs.idempotencyKey, data.idempotencyKey),
-          eq(feedLogs.babyId, data.babyId),
-        ),
-      )
-      .limit(1);
-    if (existing) {
-      return existing;
-    }
-    const [feed] = await db
-      .insert(feedLogs)
-      .values({
-        babyId: data.babyId,
-        startedAt: new Date(data.startedAt),
-        formulaPortionVolume: data.formulaPortionVolume,
-        formulaPortionUnit: data.formulaPortionUnit,
-        breastMilkPortionVolume: data.breastMilkPortionVolume,
-        breastMilkPortionUnit: data.breastMilkPortionUnit,
-        source: data.source,
-        idempotencyKey: data.idempotencyKey,
-        createdByUserId: userId,
-      })
-      .returning();
-    return feed;
+    return insertFeed(db, userId, {
+      babyId: data.babyId,
+      startedAt: new Date(data.startedAt),
+      formulaPortionVolume: data.formulaPortionVolume,
+      formulaPortionUnit: data.formulaPortionUnit,
+      breastMilkPortionVolume: data.breastMilkPortionVolume,
+      breastMilkPortionUnit: data.breastMilkPortionUnit,
+      source: data.source,
+      idempotencyKey: data.idempotencyKey,
+    });
   });
 
 export const updateFeed = createServerFn({ method: "POST" })
@@ -169,7 +152,7 @@ export const deleteFeed = createServerFn({ method: "POST" })
       .where(eq(feedLogs.id, data.feedId))
       .limit(1);
     if (!feed) {
-      throw new Error("Feed not found.");
+      return null;
     }
     await requireBabyWriteAccess(feed.babyId, userId);
     await db.delete(feedLogs).where(eq(feedLogs.id, data.feedId));

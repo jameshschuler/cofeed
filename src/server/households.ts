@@ -1,9 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/client";
-import { authUsers, householdMembers, households, userPreferences } from "../db/schema";
+import {
+  authUsers,
+  babies,
+  householdMembers,
+  households,
+  userPreferences,
+} from "../db/schema";
 import { authenticated, authenticate } from "./auth";
+import {
+  ensurePreferredHousehold,
+  setPreferredMembership,
+} from "./preferred-household";
 
 export const listHouseholds = createServerFn({ method: "GET" })
   .validator(authenticated)
@@ -15,6 +25,10 @@ export const listHouseholds = createServerFn({ method: "GET" })
         household_name: households.name,
         join_code: households.joinCode,
         member_role: householdMembers.role,
+        is_preferred: householdMembers.isDefault,
+        baby_id: sql<
+          string | null
+        >`(select ${babies.id} from ${babies} where ${babies.householdId} = ${households.id} order by ${babies.createdAt} limit 1)`,
       })
       .from(householdMembers)
       .innerJoin(households, eq(households.id, householdMembers.householdId))
@@ -31,7 +45,7 @@ export const joinHousehold = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
     const [household] = await db
-      .select({ id: households.id })
+      .select({ id: households.id, name: households.name })
       .from(households)
       .where(eq(households.joinCode, data.joinCode.trim().toUpperCase()))
       .limit(1);
@@ -41,8 +55,24 @@ export const joinHousehold = createServerFn({ method: "POST" })
     await db
       .insert(householdMembers)
       .values({ householdId: household.id, userId, role: "caregiver" })
-      .onConflictDoNothing();
-    return { householdId: household.id };
+      .onConflictDoNothing({
+        target: [householdMembers.householdId, householdMembers.userId],
+      });
+    const [membership] = await db
+      .select({ isPreferred: householdMembers.isDefault })
+      .from(householdMembers)
+      .where(
+        and(
+          eq(householdMembers.householdId, household.id),
+          eq(householdMembers.userId, userId),
+        ),
+      )
+      .limit(1);
+    return {
+      householdId: household.id,
+      householdName: household.name,
+      isPreferred: membership?.isPreferred ?? false,
+    };
   });
 
 export const leaveHousehold = createServerFn({ method: "POST" })
@@ -65,14 +95,17 @@ export const leaveHousehold = createServerFn({ method: "POST" })
     if (membership.role === "owner") {
       throw new Error("Owners cannot leave their household.");
     }
-    await db
-      .delete(householdMembers)
-      .where(
-        and(
-          eq(householdMembers.householdId, data.householdId),
-          eq(householdMembers.userId, userId),
-        ),
-      );
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(householdMembers)
+        .where(
+          and(
+            eq(householdMembers.householdId, data.householdId),
+            eq(householdMembers.userId, userId),
+          ),
+        );
+      await ensurePreferredHousehold(tx, userId);
+    });
     return null;
   });
 
@@ -133,13 +166,24 @@ export const removeHouseholdMember = createServerFn({ method: "POST" })
       throw new Error("Owners cannot remove themselves.");
     }
 
-    await db
-      .delete(householdMembers)
-      .where(
-        and(
-          eq(householdMembers.householdId, data.householdId),
-          eq(householdMembers.userId, data.memberUserId),
-        ),
-      );
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(householdMembers)
+        .where(
+          and(
+            eq(householdMembers.householdId, data.householdId),
+            eq(householdMembers.userId, data.memberUserId),
+          ),
+        );
+      await ensurePreferredHousehold(tx, data.memberUserId);
+    });
     return null;
+  });
+
+export const setPreferredHousehold = createServerFn({ method: "POST" })
+  .validator(authenticated.extend({ householdId: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    await db.transaction((tx) => setPreferredMembership(tx, userId, data.householdId));
+    return { householdId: data.householdId };
   });

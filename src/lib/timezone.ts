@@ -31,7 +31,18 @@ function getDateParts(date: Date, timeZone: string): DateParts {
 }
 
 function getUtcStartForParts(parts: DateParts, timeZone: string) {
-  const targetMs = Date.UTC(parts.year, parts.month - 1, parts.day, 0, 0, 0);
+  return getUtcForLocalParts({ ...parts, hour: 0, minute: 0, second: 0 }, timeZone);
+}
+
+function getUtcForLocalParts(parts: DateParts, timeZone: string) {
+  const targetMs = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
   let candidateMs = targetMs;
 
   for (let iteration = 0; iteration < 3; iteration += 1) {
@@ -122,4 +133,14 @@ export function getZonedTodayKey(
 ) {
   const zone = timeZone && isValidTimezone(timeZone) ? timeZone : "UTC";
   return formatZonedDateTime(now, zone).slice(0, 10);
+}
+
+// Converts local wall-clock time ("YYYY-MM-DDTHH:mm") in the given timezone to a UTC instant.
+export function zonedLocalDateTimeToUtc(value: string, timeZone: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+  const [year, month, day, hour, minute] = match.slice(1).map(Number);
+  return getUtcForLocalParts({ year, month, day, hour, minute, second: 0 }, timeZone);
 }

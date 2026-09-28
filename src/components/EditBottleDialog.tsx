@@ -4,13 +4,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import type { FeedsActions, FeedsState } from "./FeedLogList";
-
-const ML_PER_OZ = 29.5735;
-const MAX_PORTION_OZ = 60;
-
-function getMaxPortionVolume(unit: "oz" | "ml") {
-  return unit === "oz" ? MAX_PORTION_OZ : Math.round(MAX_PORTION_OZ * ML_PER_OZ);
-}
+import { getMaxPortionVolume } from "../lib/volume";
 
 export function EditBottleDialog({
   state,

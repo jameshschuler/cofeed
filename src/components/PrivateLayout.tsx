@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { House, LayoutDashboard, Milk, User } from "lucide-react";
+import { Droplet, LayoutDashboard, MessageCircle, Milk, Settings } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Card,
@@ -14,27 +14,32 @@ import type { PrivateScreen } from "../types/route-types";
 
 const SCREEN_TITLES: Record<PrivateScreen, string> = {
   dashboard: "Dashboard",
+  chat: "Log",
   feeds: "Feeds",
+  pumping: "Pumping",
   households: "Households",
   account: "Account",
 };
 
 const SCREEN_SUBTITLES: Record<PrivateScreen, string> = {
   dashboard: "Today at a glance.",
+  chat: "Tell CoFeed what happened.",
   feeds: "Your feed history.",
+  pumping: "Your pumping history.",
   households: "Manage your shared households.",
-  account: "Manage your account settings.",
+  account: "Manage your account and households.",
 };
 
 const PRIVATE_PATH_TO_SCREEN: Partial<Record<string, PrivateScreen>> = {
   "/dashboard": "dashboard",
+  "/chat": "chat",
   "/feeds": "feeds",
-  "/households": "households",
+  "/pumping": "pumping",
   "/account": "account",
 };
 
 const ACTIVE_TAB_CLASS =
-  "h-14 sm:h-12 rounded-xl border border-primary/30 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90";
+  "h-14 sm:h-12 rounded-xl border border-primary/30 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:text-primary-foreground";
 
 const INACTIVE_TAB_CLASS =
   "h-14 sm:h-12 rounded-xl text-muted-foreground hover:bg-background hover:text-foreground";
@@ -84,7 +89,21 @@ export function PrivateLayout({
             <CardTitle className="text-xl">{SCREEN_TITLES[activeScreen]}</CardTitle>
             <CardDescription>{SCREEN_SUBTITLES[activeScreen]}</CardDescription>
           </div>
-          {headerAction}
+          <div className="flex items-center gap-2">
+            {headerAction}
+            <Button
+              type="button"
+              size="icon"
+              variant={activeScreen === "account" ? "default" : "ghost"}
+              className="size-9"
+              aria-label="Settings"
+              title="Settings"
+              aria-current={activeScreen === "account" ? "page" : undefined}
+              onClick={() => onNavigate("account")}
+            >
+              <Settings className="size-5 sm:size-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-0 pb-3 pt-0 sm:pb-4">
           {children}
@@ -104,6 +123,16 @@ export function PrivateLayout({
             <Button
               type="button"
               variant="ghost"
+              className={getTabClass("chat")}
+              aria-current={activeScreen === "chat" ? "page" : undefined}
+              aria-label="Log"
+              onClick={() => onNavigate("chat")}
+            >
+              <MessageCircle className="size-6 sm:size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
               className={getTabClass("feeds")}
               aria-current={activeScreen === "feeds" ? "page" : undefined}
               aria-label="Feeds"
@@ -114,22 +143,12 @@ export function PrivateLayout({
             <Button
               type="button"
               variant="ghost"
-              className={getTabClass("households")}
-              aria-current={activeScreen === "households" ? "page" : undefined}
-              aria-label="Households"
-              onClick={() => onNavigate("households")}
+              className={getTabClass("pumping")}
+              aria-current={activeScreen === "pumping" ? "page" : undefined}
+              aria-label="Pumping"
+              onClick={() => onNavigate("pumping")}
             >
-              <House className="size-6 sm:size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className={getTabClass("account")}
-              aria-current={activeScreen === "account" ? "page" : undefined}
-              aria-label="Account"
-              onClick={() => onNavigate("account")}
-            >
-              <User className="size-6 sm:size-4" />
+              <Droplet className="size-6 sm:size-4" />
             </Button>
           </div>
         </CardFooter>

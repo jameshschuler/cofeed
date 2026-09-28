@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { clearLastBabyId } from "../lib/activity-cache";
 import { getAccessToken } from "../lib/auth-token";
+import { pickBabyProfileBabyId } from "../lib/preferred-household";
 import { getDeviceTimezone } from "../lib/timezone";
 import { getBabyProfile, updateBabyProfile } from "../server/babies";
 import {
@@ -8,6 +10,7 @@ import {
   listHouseholdMembers,
   listHouseholds,
   removeHouseholdMember,
+  setPreferredHousehold as setPreferredHouseholdOnServer,
 } from "../server/households";
 import { getProfile } from "../server/profile";
 
@@ -16,6 +19,13 @@ export type HouseholdMembership = {
   household_name: string;
   join_code: string;
   member_role: "owner" | "caregiver" | "viewer";
+  is_preferred: boolean;
+  baby_id: string | null;
+};
+
+export type PreferredHouseholdPrompt = {
+  householdId: string;
+  householdName: string;
 };
 
 export type HouseholdMember = {
@@ -29,6 +39,7 @@ export type BabyProfile = {
   id: string;
   name: string;
   dateOfBirth: string;
+  householdId: string;
   memberRole: "owner" | "caregiver" | "viewer";
 };
 
@@ -54,6 +65,9 @@ export function useHouseholds({
   const [removingMemberKey, setRemovingMemberKey] = useState<string | null>(null);
   const [babyProfile, setBabyProfile] = useState<BabyProfile | null>(null);
   const [isSavingBabyProfile, setIsSavingBabyProfile] = useState(false);
+  const [preferredPrompt, setPreferredPrompt] =
+    useState<PreferredHouseholdPrompt | null>(null);
+  const [settingPreferredId, setSettingPreferredId] = useState<string | null>(null);
 
   async function loadHouseholds() {
     if (!userId) {
@@ -66,9 +80,10 @@ export function useHouseholds({
       const accessToken = await getAccessToken();
       const nextHouseholds = await listHouseholds({ data: { accessToken } });
       setHouseholds(nextHouseholds);
-      const { babyId } = await getProfile({
+      const profile = await getProfile({
         data: { accessToken, timezone: getDeviceTimezone() },
       });
+      const babyId = pickBabyProfileBabyId(nextHouseholds, profile.babyId);
       if (babyId) {
         const profile = await getBabyProfile({
           data: { accessToken, babyId },
@@ -117,8 +132,9 @@ export function useHouseholds({
     setSuccessMessage(null);
     setIsJoiningHousehold(true);
 
+    let joined: Awaited<ReturnType<typeof joinHouseholdOnServer>>;
     try {
-      await joinHouseholdOnServer({
+      joined = await joinHouseholdOnServer({
         data: {
           accessToken: await getAccessToken(),
           joinCode: joinCode.trim().toUpperCase(),
@@ -137,6 +153,41 @@ export function useHouseholds({
     setJoinCode("");
     await loadHouseholds();
     setSuccessMessage("Joined household.");
+    if (!joined.isPreferred) {
+      setPreferredPrompt({
+        householdId: joined.householdId,
+        householdName: joined.householdName,
+      });
+    }
+  }
+
+  async function setPreferredHousehold(householdId: string) {
+    if (!userId) {
+      return;
+    }
+
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setSettingPreferredId(householdId);
+    try {
+      await setPreferredHouseholdOnServer({
+        data: { accessToken: await getAccessToken(), householdId },
+      });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to change preferred household.",
+      );
+      return;
+    } finally {
+      setSettingPreferredId(null);
+      setPreferredPrompt(null);
+    }
+
+    clearLastBabyId(userId);
+    await loadHouseholds();
+    setSuccessMessage("Preferred household updated.");
   }
 
   async function leaveHousehold(householdId: string) {
@@ -158,6 +209,9 @@ export function useHouseholds({
 
     setLeavingHouseholdId(null);
 
+    if (userId) {
+      clearLastBabyId(userId);
+    }
     await loadHouseholds();
     setSuccessMessage("Left household.");
   }
@@ -225,5 +279,9 @@ export function useHouseholds({
     babyProfile,
     isSavingBabyProfile,
     saveBabyProfile,
+    preferredPrompt,
+    settingPreferredId,
+    setPreferredHousehold,
+    dismissPreferredPrompt: () => setPreferredPrompt(null),
   };
 }

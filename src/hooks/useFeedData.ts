@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getAccessToken } from "../lib/auth-token";
+import { getActivityScope } from "../lib/activity-scope";
 import { getDeviceTimezone } from "../lib/timezone";
 import {
   readActivityCache,
@@ -38,7 +39,9 @@ export function useFeedData({
   const [pumpingLogs, setPumpingLogs] = useState<PumpingLogItem[]>([]);
   const [weeklyPumpingLogs, setWeeklyPumpingLogs] = useState<PumpingLogItem[]>([]);
   const [activeBabyId, setActiveBabyId] = useState<string | null>(null);
-  const [isLoadingFeeds, setIsLoadingFeeds] = useState(false);
+  const [targetHouseholdName, setTargetHouseholdName] = useState<string | null>(null);
+  const [viewBabyId, setViewBabyId] = useState<string | null>(null);
+  const [isLoadingFeeds, setIsLoadingFeeds] = useState(true);
   const [feedsLoadError, setFeedsLoadError] = useState<string | null>(null);
   const [isUsingCachedActivity, setIsUsingCachedActivity] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
@@ -75,7 +78,7 @@ export function useFeedData({
     setLastSyncedAt(new Date().toISOString());
     setIsUsingCachedActivity(false);
   }
-  const [isLoadingWeeklyStats, setIsLoadingWeeklyStats] = useState(false);
+  const [isLoadingWeeklyStats, setIsLoadingWeeklyStats] = useState(true);
   const [weeklyFeedError, setWeeklyFeedError] = useState<string | null>(null);
   const [weeklyPumpingError, setWeeklyPumpingError] = useState<string | null>(null);
 
@@ -84,13 +87,13 @@ export function useFeedData({
     filter: FeedFilter = feedFilter,
     date: string | null = selectedDate,
   ) {
+    const { queryBabyId, cacheKey } = getActivityScope(screen, babyId, viewBabyId);
     const requestId = ++feedRequestIdRef.current;
     try {
       const feedData = await listFeeds({
         data: {
           accessToken: await getAccessToken(),
-          // The feeds screen lists activity across every household.
-          babyId: screen === "feeds" ? null : babyId,
+          babyId: queryBabyId,
           since: null,
           timezone: getDeviceTimezone(),
           range: filter === "date" ? "date" : filter,
@@ -102,12 +105,12 @@ export function useFeedData({
         return;
       }
       setFeedLogs(feedData);
-      saveCachedActivity(babyId, { feeds: feedData });
+      saveCachedActivity(cacheKey, { feeds: feedData });
     } catch (error) {
       if (feedRequestIdRef.current !== requestId) {
         return;
       }
-      const cached = getCachedActivity(babyId);
+      const cached = getCachedActivity(cacheKey);
       if (cached) {
         setFeedLogs(cached.feeds);
         setLastSyncedAt(cached.savedAt);
@@ -124,13 +127,13 @@ export function useFeedData({
     filter: FeedFilter = feedFilter,
     date: string | null = selectedDate,
   ) {
+    const { queryBabyId, cacheKey } = getActivityScope(screen, babyId, viewBabyId);
     const requestId = ++pumpingRequestIdRef.current;
     try {
       const pumpingData = await listPumpingLogs({
         data: {
           accessToken: await getAccessToken(),
-          // The feeds screen lists activity across every household.
-          babyId: screen === "feeds" ? null : babyId,
+          babyId: queryBabyId,
           since: null,
           timezone: getDeviceTimezone(),
           range: filter === "date" ? "date" : filter,
@@ -142,12 +145,12 @@ export function useFeedData({
         return;
       }
       setPumpingLogs(pumpingData);
-      saveCachedActivity(babyId, { pumpingLogs: pumpingData });
+      saveCachedActivity(cacheKey, { pumpingLogs: pumpingData });
     } catch (error) {
       if (pumpingRequestIdRef.current !== requestId) {
         return;
       }
-      const cached = getCachedActivity(babyId);
+      const cached = getCachedActivity(cacheKey);
       if (cached) {
         setPumpingLogs(cached.pumpingLogs);
         setLastSyncedAt(cached.savedAt);
@@ -169,11 +172,12 @@ export function useFeedData({
     setWeeklyFeedError(null);
     setWeeklyPumpingError(null);
     const accessToken = await getAccessToken();
+    const { queryBabyId, cacheKey } = getActivityScope("dashboard", babyId, viewBabyId);
     const [weeklyFeeds, weeklyPumping] = await Promise.allSettled([
       listFeeds({
         data: {
           accessToken,
-          babyId,
+          babyId: queryBabyId,
           since: null,
           range: "week",
           timezone: getDeviceTimezone(),
@@ -183,7 +187,7 @@ export function useFeedData({
       listPumpingLogs({
         data: {
           accessToken,
-          babyId,
+          babyId: queryBabyId,
           since: null,
           range: "week",
           timezone: getDeviceTimezone(),
@@ -197,9 +201,9 @@ export function useFeedData({
 
     if (weeklyFeeds.status === "fulfilled") {
       setWeeklyFeedLogs(weeklyFeeds.value);
-      saveCachedActivity(babyId, { weeklyFeeds: weeklyFeeds.value });
+      saveCachedActivity(cacheKey, { weeklyFeeds: weeklyFeeds.value });
     } else {
-      const cached = getCachedActivity(babyId);
+      const cached = getCachedActivity(cacheKey);
       setWeeklyFeedLogs(cached?.weeklyFeeds ?? []);
       setWeeklyFeedError(
         cached
@@ -214,9 +218,9 @@ export function useFeedData({
 
     if (weeklyPumping.status === "fulfilled") {
       setWeeklyPumpingLogs(weeklyPumping.value);
-      saveCachedActivity(babyId, { weeklyPumpingLogs: weeklyPumping.value });
+      saveCachedActivity(cacheKey, { weeklyPumpingLogs: weeklyPumping.value });
     } else {
-      const cached = getCachedActivity(babyId);
+      const cached = getCachedActivity(cacheKey);
       setWeeklyPumpingLogs(cached?.weeklyPumpingLogs ?? []);
       setWeeklyPumpingError(
         cached
@@ -232,7 +236,10 @@ export function useFeedData({
   }
 
   useEffect(() => {
-    if ((screen !== "feeds" && screen !== "dashboard") || !session) {
+    if (
+      (screen !== "feeds" && screen !== "pumping" && screen !== "dashboard") ||
+      !session
+    ) {
       return;
     }
 
@@ -242,13 +249,14 @@ export function useFeedData({
       setFeedsLoadError(null);
 
       try {
-        const { babyId } = await getProfile({
+        const { babyId, householdName, householdCount } = await getProfile({
           data: { accessToken: await getAccessToken(), timezone: getDeviceTimezone() },
         });
         if (session?.user?.id) {
           writeLastBabyId(session.user.id, babyId);
         }
         setActiveBabyId(babyId);
+        setTargetHouseholdName(householdCount > 1 ? householdName : null);
         const dateForScreen = screen === "dashboard" ? null : selectedDate;
         await refreshFeedLogs(
           babyId,
@@ -268,7 +276,11 @@ export function useFeedData({
         }
       } catch (error) {
         const cachedBabyId = session?.user?.id ? readLastBabyId(session.user.id) : null;
-        const cached = cachedBabyId ? getCachedActivity(cachedBabyId) : null;
+        const cached = cachedBabyId
+          ? getCachedActivity(
+              getActivityScope(screen, cachedBabyId, viewBabyId).cacheKey,
+            )
+          : null;
         if (cachedBabyId && cached) {
           setActiveBabyId(cachedBabyId);
           setFeedLogs(cached.feeds);
@@ -295,7 +307,7 @@ export function useFeedData({
     }
 
     void loadActivity();
-  }, [screen, session, feedFilter, selectedDate]);
+  }, [screen, session, feedFilter, selectedDate, viewBabyId]);
 
   return {
     feedLogs,
@@ -308,6 +320,9 @@ export function useFeedData({
     isUsingCachedActivity,
     lastSyncedAt,
     activeBabyId,
+    targetHouseholdName,
+    viewBabyId,
+    setViewBabyId,
     isLoadingFeeds,
     feedsLoadError,
     refreshFeedLogs,

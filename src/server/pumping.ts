@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "../db/client";
 import {
   authUsers,
@@ -9,7 +10,7 @@ import {
   pumpingLogs,
   userPreferences,
 } from "../db/schema";
-import { createPumpingRequestSchema } from "../lib/api-contracts";
+import { createPumpingRequestSchema, volumeUnitSchema } from "../lib/api-contracts";
 import {
   authenticated,
   authenticate,
@@ -21,6 +22,7 @@ import {
   getRangeBounds,
   resolveRangeTimezone,
 } from "./activity-range";
+import { insertPumping } from "./activity-writes";
 
 export const listPumpingLogs = createServerFn({ method: "GET" })
   .validator(activityListQuerySchema)
@@ -91,30 +93,62 @@ export const createPumpingLog = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const userId = await authenticate(data.accessToken);
     await requireBabyWriteAccess(data.babyId, userId);
-    const [existing] = await db
-      .select()
-      .from(pumpingLogs)
-      .where(
-        and(
-          eq(pumpingLogs.idempotencyKey, data.idempotencyKey),
-          eq(pumpingLogs.babyId, data.babyId),
-        ),
-      )
-      .limit(1);
-    if (existing) {
-      return existing;
-    }
+    return insertPumping(db, userId, {
+      babyId: data.babyId,
+      startedAt: new Date(data.startedAt),
+      volume: data.volume,
+      unit: data.unit,
+      source: data.source,
+      idempotencyKey: data.idempotencyKey,
+    });
+  });
+
+export const deletePumpingLog = createServerFn({ method: "POST" })
+  .validator(authenticated.extend({ pumpingLogId: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
     const [session] = await db
-      .insert(pumpingLogs)
-      .values({
-        babyId: data.babyId,
+      .select({ babyId: pumpingLogs.babyId })
+      .from(pumpingLogs)
+      .where(eq(pumpingLogs.id, data.pumpingLogId))
+      .limit(1);
+    if (!session) {
+      return null;
+    }
+    await requireBabyWriteAccess(session.babyId, userId);
+    await db.delete(pumpingLogs).where(eq(pumpingLogs.id, data.pumpingLogId));
+    return null;
+  });
+
+export const updatePumpingLog = createServerFn({ method: "POST" })
+  .validator(
+    authenticated.extend({
+      pumpingLogId: z.string().uuid(),
+      startedAt: z.string().datetime(),
+      volume: z.number().positive(),
+      unit: volumeUnitSchema,
+    }),
+  )
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    const [session] = await db
+      .select({ babyId: pumpingLogs.babyId })
+      .from(pumpingLogs)
+      .where(eq(pumpingLogs.id, data.pumpingLogId))
+      .limit(1);
+    if (!session) {
+      throw new Error("Pumping session not found.");
+    }
+    await requireBabyWriteAccess(session.babyId, userId);
+    const [updated] = await db
+      .update(pumpingLogs)
+      .set({
         startedAt: new Date(data.startedAt),
         volume: data.volume,
         unit: data.unit,
-        source: data.source,
-        idempotencyKey: data.idempotencyKey,
-        createdByUserId: userId,
+        updatedAt: new Date(),
       })
+      .where(eq(pumpingLogs.id, data.pumpingLogId))
       .returning();
-    return session;
+    return updated;
   });

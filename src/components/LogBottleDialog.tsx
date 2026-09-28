@@ -7,13 +7,7 @@ import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import type { FeedsActions, FeedsState } from "./FeedLogList";
 import type { VolumeUnit } from "../types/route-types";
-
-const ML_PER_OZ = 29.5735;
-const MAX_PORTION_OZ = 60;
-
-function getMaxPortionVolume(unit: VolumeUnit) {
-  return unit === "oz" ? MAX_PORTION_OZ : Math.round(MAX_PORTION_OZ * ML_PER_OZ);
-}
+import { ML_PER_OZ, getMaxPortionVolume } from "../lib/volume";
 
 function getLocalDateTimeValue(date = new Date()) {
   const tzOffsetMs = date.getTimezoneOffset() * 60_000;
@@ -74,8 +68,8 @@ export function LogBottleDialog({
         type="button"
         size="icon"
         className="fixed right-4 bottom-[calc(7rem+env(safe-area-inset-bottom))] z-40 size-12 rounded-full shadow-lg sm:static sm:size-9 sm:rounded-md sm:shadow-xs"
-        aria-label="Log a bottle"
-        title="Log a bottle"
+        aria-label="Log activity"
+        title="Log activity"
         onClick={handleOpen}
       >
         <Plus className="size-5 sm:size-4" />
@@ -86,6 +80,11 @@ export function LogBottleDialog({
             <DialogTitle>
               {mode === "bottle" ? "Log a bottle" : "Log pumping session"}
             </DialogTitle>
+            {state.compose.targetHouseholdName ? (
+              <p className="text-xs text-muted-foreground">
+                Logging to {state.compose.targetHouseholdName}
+              </p>
+            ) : null}
           </DialogHeader>
           <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
             <Button

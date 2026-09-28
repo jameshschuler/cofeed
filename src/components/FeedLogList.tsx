@@ -2,10 +2,10 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Milk, Pencil, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { SourceBadge } from "./ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { EmptyState } from "./ui/empty-state";
+import { ActivityListHeader } from "./ActivityListHeader";
 import { EditBottleDialog } from "./EditBottleDialog";
 import type { FeedFilter, FeedLogItem, VolumeUnit } from "../types/route-types";
 
@@ -18,6 +18,7 @@ export type FeedsState = {
     pumpingVolume: string;
     isSaving: boolean;
     isSavingPumping: boolean;
+    targetHouseholdName: string | null;
   };
   list: {
     filter: FeedFilter;
@@ -93,54 +94,15 @@ export function FeedLogList({
   const [pendingDeleteFeed, setPendingDeleteFeed] = useState<FeedLogItem | null>(null);
 
   return (
-    <div className="flex min-h-[24rem] flex-none flex-col rounded-xl border bg-background/70 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium text-foreground">Recent feeds</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="grid grid-cols-3 overflow-hidden rounded-lg bg-muted">
-            <Button
-              type="button"
-              size="sm"
-              variant={state.list.filter === "today" ? "default" : "ghost"}
-              className="h-8 rounded-none"
-              onClick={() => actions.onFeedFilterChange("today")}
-            >
-              Today
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={state.list.filter === "yesterday" ? "default" : "ghost"}
-              className="h-8 rounded-none"
-              onClick={() => actions.onFeedFilterChange("yesterday")}
-            >
-              Yesterday
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={state.list.filter === "date" ? "default" : "ghost"}
-              className="h-8 rounded-none"
-              onClick={() => actions.onFeedFilterChange("date")}
-            >
-              Date
-            </Button>
-          </div>
-          {state.list.filter === "date" ? (
-            <Input
-              type="date"
-              className="h-8 w-auto text-xs"
-              value={state.list.selectedDate ?? ""}
-              onChange={(e) => actions.onFeedDateChange(e.target.value || null)}
-            />
-          ) : null}
-          <div className="flex items-center rounded-lg border border-border/70 px-3 py-1.5">
-            <span className="text-xs text-muted-foreground">
-              Display: {preferredDisplayVolumeUnit}
-            </span>
-          </div>
-        </div>
-      </div>
+    <div className="flex min-h-[24rem] flex-none flex-col rounded-xl border bg-background/70 p-4 shadow-sm">
+      <ActivityListHeader
+        title="Recent feeds"
+        filter={state.list.filter}
+        selectedDate={state.list.selectedDate}
+        displayVolumeUnit={preferredDisplayVolumeUnit}
+        onFilterChange={actions.onFeedFilterChange}
+        onDateChange={actions.onFeedDateChange}
+      />
       {state.list.isLoading ? (
         <div className="mt-2 space-y-6 pr-1">
           <span className="sr-only">Loading feeds…</span>
@@ -184,7 +146,7 @@ export function FeedLogList({
                 return (
                   <div
                     key={feed.id}
-                    className="rounded-lg border bg-background px-4 py-3"
+                    className="rounded-lg border bg-background px-4 py-3 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">

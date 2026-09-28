@@ -26,7 +26,24 @@ function DashboardPage() {
     weeklyPumpingError,
     isUsingCachedActivity,
     lastSyncedAt,
+    households,
+    dashboardBabyId,
+    setDashboardBabyId,
   } = useRouteScreen("dashboard");
+  const householdOptions = Array.from(
+    new Map(
+      households
+        .filter((household) => household.baby_id)
+        .map((household) => [
+          household.household_id,
+          {
+            babyId: household.baby_id as string,
+            householdName: household.household_name,
+            isPreferred: household.is_preferred,
+          },
+        ]),
+    ).values(),
+  );
 
   if (!isAuthReady || !isPreferencesReady) {
     return <AuthLoading />;
@@ -60,12 +77,16 @@ function DashboardPage() {
           weeklyFeeds={weeklyFeeds}
           pumpingLogs={pumpingLogs}
           weeklyPumpingLogs={weeklyPumpingLogs}
+          isLoadingActivity={feedsRouteState.list.isLoading}
           isLoadingWeeklyStats={isLoadingWeeklyStats}
           weeklyFeedError={weeklyFeedError}
           weeklyPumpingError={weeklyPumpingError}
           isUsingCachedActivity={isUsingCachedActivity}
           lastSyncedAt={lastSyncedAt}
           displayVolumeUnit={displayVolumeUnit}
+          householdOptions={householdOptions}
+          selectedBabyId={dashboardBabyId}
+          onSelectBaby={setDashboardBabyId}
         />
       </PrivateLayout>
     </RouteShell>

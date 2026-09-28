@@ -17,9 +17,9 @@ export function Account() {
   }, [state.profileName]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-2 sm:gap-8 sm:py-3">
-        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6 py-2 sm:gap-8 sm:py-3">
+        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
           <p className="text-sm font-medium text-foreground">Preferences</p>
           <form
             className="mt-5 space-y-3"
@@ -116,7 +116,7 @@ export function Account() {
           </Button>
         </section>
 
-        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
+        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
           <p className="text-sm font-medium text-foreground">Your data</p>
           <Button
             type="button"
@@ -156,7 +156,7 @@ export function Account() {
         </section>
 
         {!isInstalled && (canInstall || showIosInstructions) ? (
-          <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6">
+          <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
             <p className="text-sm font-medium text-foreground">Install CoFeed</p>
             {canInstall ? (
               <Button
