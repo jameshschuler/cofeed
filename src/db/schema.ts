@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { ActivitySource } from "../types/route-types";
 import {
   pgSchema,
   uuid,
@@ -90,7 +91,7 @@ export const feedLogs = cofeed.table(
     formulaPortionUnit: volumeUnitEnum("formula_portion_unit"),
     breastMilkPortionVolume: real("breast_milk_portion_volume"),
     breastMilkPortionUnit: volumeUnitEnum("breast_milk_portion_unit"),
-    source: text("source").notNull().default("cofeed"),
+    source: text("source").$type<ActivitySource>().notNull().default("cofeed"),
     idempotencyKey: text("idempotency_key").notNull(),
     createdByUserId: uuid("created_by_user_id")
       .notNull()
@@ -119,7 +120,7 @@ export const pumpingLogs = cofeed.table(
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     volume: real("volume").notNull(),
     unit: volumeUnitEnum("unit").notNull(),
-    source: text("source").notNull().default("cofeed"),
+    source: text("source").$type<ActivitySource>().notNull().default("cofeed"),
     idempotencyKey: text("idempotency_key").notNull(),
     createdByUserId: uuid("created_by_user_id")
       .notNull()

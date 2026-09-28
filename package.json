@@ -8,6 +8,7 @@
     "start": "node .output/server/index.mjs",
     "build": "vite build",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
     "test:watch": "vitest",
     "test:smoke": "playwright test",
     "db:generate": "drizzle-kit generate",
