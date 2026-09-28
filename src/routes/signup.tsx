@@ -2,46 +2,21 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AuthLoading } from "../components/AuthLoading";
 import { RouteShell } from "../components/RouteShell";
 import { Signup } from "../components/Signup";
+import { AuthFormProvider, toAuthFormValue } from "../components/auth-form-context";
 import { useRouteScreen } from "../hooks/useRouteScreen";
 
 function SignupPage() {
-  const {
-    isAuthReady,
-    email,
-    password,
-    confirmPassword,
-    isSubmitting,
-    errorMessage,
-    successMessage,
-    setEmail,
-    setPassword,
-    setConfirmPassword,
-    goTo,
-    handleSignup,
-  } = useRouteScreen("signup");
+  const auth = useRouteScreen("signup");
 
-  if (!isAuthReady) {
+  if (!auth.isAuthReady) {
     return <AuthLoading />;
   }
 
   return (
     <RouteShell>
-      <Signup
-        email={email}
-        password={password}
-        confirmPassword={confirmPassword}
-        isSubmitting={isSubmitting}
-        errorMessage={errorMessage}
-        successMessage={successMessage}
-        onEmailChange={setEmail}
-        onPasswordChange={setPassword}
-        onConfirmPasswordChange={setConfirmPassword}
-        onSubmit={(e) => {
-          void handleSignup(e);
-        }}
-        onGoToLogin={() => goTo("login")}
-        onGoToHome={() => goTo("home")}
-      />
+      <AuthFormProvider value={toAuthFormValue(auth)}>
+        <Signup />
+      </AuthFormProvider>
     </RouteShell>
   );
 }

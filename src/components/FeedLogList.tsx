@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
 import { Milk, Pencil, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { SourceBadge } from "./ui/badge";
@@ -7,91 +6,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { EmptyState } from "./ui/empty-state";
 import { ActivityListHeader } from "./ActivityListHeader";
 import { EditBottleDialog } from "./EditBottleDialog";
-import type { FeedFilter, FeedLogItem, VolumeUnit } from "../types/route-types";
-
-export type FeedsState = {
-  compose: {
-    volumeUnit: VolumeUnit | null;
-    startedAt: string;
-    formulaPortionVolume: string;
-    breastMilkPortionVolume: string;
-    pumpingVolume: string;
-    isSaving: boolean;
-    isSavingPumping: boolean;
-    targetHouseholdName: string | null;
-  };
-  list: {
-    filter: FeedFilter;
-    selectedDate: string | null;
-    isLoading: boolean;
-    logs: FeedLogItem[];
-    loadError: string | null;
-  };
-  edit: {
-    editingFeedId: string | null;
-    startedAt: string;
-    volumeUnit: VolumeUnit;
-    formulaVolume: string;
-    breastMilkVolume: string;
-    isUpdating: boolean;
-    deletingFeedId: string | null;
-  };
-};
-
-export type FeedsActions = {
-  onComposeVolumeUnitChange: (value: VolumeUnit) => void;
-  onComposeStartedAtChange: (value: string) => void;
-  onComposeFormulaPortionVolumeChange: (value: string) => void;
-  onComposeBreastMilkPortionVolumeChange: (value: string) => void;
-  onComposePumpingVolumeChange: (value: string) => void;
-  onSubmitNewFeed: (e: FormEvent<HTMLFormElement>) => Promise<boolean>;
-  onSubmitPumping: (e: FormEvent<HTMLFormElement>) => Promise<boolean>;
-  onFeedFilterChange: (filter: FeedFilter) => void;
-  onFeedDateChange: (date: string | null) => void;
-  onStartEditFeed: (feed: FeedLogItem) => void;
-  onDeleteFeed: (feedId: string) => void;
-  onEditStartedAtChange: (value: string) => void;
-  onEditVolumeUnitChange: (value: VolumeUnit) => void;
-  onEditFormulaVolumeChange: (value: string) => void;
-  onEditBreastMilkVolumeChange: (value: string) => void;
-  onSubmitFeedUpdate: (e: FormEvent<HTMLFormElement>) => void;
-  onCancelFeedEdit: () => void;
-};
-
-type FeedGroups = Array<{
-  dayKey: string;
-  totalVolumeMl: number;
-  formulaVolumeMl: number;
-  breastMilkVolumeMl: number;
-  feeds: FeedLogItem[];
-}>;
-
-export function FeedLogList({
-  state,
-  actions,
-  groupedFeeds,
-  preferredDisplayVolumeUnit,
+import { useFeedsContext } from "./feeds-context";
+import {
+  formatDateTime,
   formatDayLabel,
-  formatDailyTotal,
-  formatDailyBreakdown,
-  formatFeedDate,
-  formatPortionVolume,
+  formatPortion,
   formatVolume,
-  getFeedTotalVolumeOz,
-}: {
-  state: FeedsState;
-  actions: FeedsActions;
-  groupedFeeds: FeedGroups;
-  preferredDisplayVolumeUnit: VolumeUnit;
-  formatDayLabel: (dayKey: string) => string;
-  formatDailyTotal: (totalMl: number) => string;
-  formatDailyBreakdown: (formulaMl: number, breastMilkMl: number) => string;
-  formatFeedDate: (value: string) => string;
-  formatPortionVolume: (value: number | null, unit: VolumeUnit | null) => string;
-  formatVolume: (valueOz: number | null) => string;
-  getFeedTotalVolumeOz: (feed: FeedLogItem) => number;
-}) {
+  getFeedVolumesMl,
+  groupFeedsByDay,
+} from "../lib/activity-format";
+import type { FeedLogItem } from "../types/route-types";
+
+export function FeedLogList() {
+  const { state, actions, displayVolumeUnit } = useFeedsContext();
   const [pendingDeleteFeed, setPendingDeleteFeed] = useState<FeedLogItem | null>(null);
+  const groupedFeeds = groupFeedsByDay(state.list.logs);
 
   return (
     <div className="flex min-h-[24rem] flex-none flex-col rounded-xl border bg-background/70 p-4 shadow-sm">
@@ -99,7 +28,7 @@ export function FeedLogList({
         title="Recent feeds"
         filter={state.list.filter}
         selectedDate={state.list.selectedDate}
-        displayVolumeUnit={preferredDisplayVolumeUnit}
+        displayVolumeUnit={displayVolumeUnit}
         onFilterChange={actions.onFeedFilterChange}
         onDateChange={actions.onFeedDateChange}
       />
@@ -132,17 +61,17 @@ export function FeedLogList({
               <div className="rounded-lg border bg-muted/30 px-3 py-2">
                 <p className="text-sm font-medium text-foreground">
                   {formatDayLabel(group.dayKey)} ·{" "}
-                  {formatDailyTotal(group.totalVolumeMl)}
+                  {formatVolume(group.totalVolumeMl, displayVolumeUnit)} total
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDailyBreakdown(
-                    group.formulaVolumeMl,
-                    group.breastMilkVolumeMl,
-                  )}
+                  Formula: {formatVolume(group.formulaVolumeMl, displayVolumeUnit)} ·
+                  Breast milk:{" "}
+                  {formatVolume(group.breastMilkVolumeMl, displayVolumeUnit)}
                 </p>
               </div>
 
               {group.feeds.map((feed) => {
+                const { totalMl } = getFeedVolumesMl(feed);
                 return (
                   <div
                     key={feed.id}
@@ -151,10 +80,12 @@ export function FeedLogList({
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-foreground">
-                          {formatVolume(getFeedTotalVolumeOz(feed))}
+                          {totalMl > 0
+                            ? formatVolume(totalMl, displayVolumeUnit)
+                            : "No volume"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatFeedDate(feed.started_at)}
+                          {formatDateTime(feed.started_at)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {feed.household_name} ·{" "}
@@ -164,9 +95,10 @@ export function FeedLogList({
                         feed.formula_portion_volume > 0 &&
                         !feed.breast_milk_portion_volume ? (
                           <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                            {formatPortionVolume(
+                            {formatPortion(
                               feed.formula_portion_volume,
                               feed.formula_portion_unit,
+                              displayVolumeUnit,
                             )}
                             <span className="rounded-full border px-2 py-0.5">
                               Formula only
@@ -176,9 +108,10 @@ export function FeedLogList({
                           feed.breast_milk_portion_volume &&
                           feed.breast_milk_portion_volume > 0 ? (
                           <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                            {formatPortionVolume(
+                            {formatPortion(
                               feed.breast_milk_portion_volume,
                               feed.breast_milk_portion_unit,
+                              displayVolumeUnit,
                             )}
                             <span className="rounded-full border px-2 py-0.5">
                               Breast milk only
@@ -188,16 +121,18 @@ export function FeedLogList({
                           <>
                             <p className="mt-1 text-xs text-muted-foreground">
                               Formula:{" "}
-                              {formatPortionVolume(
+                              {formatPortion(
                                 feed.formula_portion_volume,
                                 feed.formula_portion_unit,
+                                displayVolumeUnit,
                               )}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               Breast milk:{" "}
-                              {formatPortionVolume(
+                              {formatPortion(
                                 feed.breast_milk_portion_volume,
                                 feed.breast_milk_portion_unit,
+                                displayVolumeUnit,
                               )}
                             </p>
                           </>
@@ -244,7 +179,7 @@ export function FeedLogList({
           className="mt-2"
         />
       )}
-      <EditBottleDialog state={state} actions={actions} />
+      <EditBottleDialog />
       <Dialog
         open={pendingDeleteFeed !== null}
         onOpenChange={(open) => {

@@ -13,7 +13,9 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { MAX_ACTIVITY_TEXT_LENGTH } from "../lib/activity-text";
 import type { ChatMessage } from "../lib/chat-history";
-import { cn } from "../lib/utils";
+import { formatTime } from "../lib/activity-format";
+import { capitalize, cn } from "../lib/utils";
+import { useChatContext } from "./chat-context";
 import type { VolumeUnit } from "../types/route-types";
 
 const PROMPTS: Record<VolumeUnit, { examples: string[]; placeholder: string }> = {
@@ -36,14 +38,6 @@ const PROMPTS: Record<VolumeUnit, { examples: string[]; placeholder: string }> =
 };
 
 const MAX_COMPOSER_HEIGHT_PX = 160;
-
-function formatTime(value: string) {
-  return new Date(value).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-}
-
-function capitalize(value: string) {
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
-}
 
 function AssistantBubble({ children, tone }: { children: ReactNode; tone?: "error" }) {
   return (
@@ -128,29 +122,19 @@ function LoggedMessage({
   );
 }
 
-export function ActivityChat({
-  displayVolumeUnit,
-  messages,
-  draft,
-  isSending,
-  isOnline,
-  undoingId,
-  onDraftChange,
-  onSend,
-  onRetry,
-  onUndo,
-}: {
-  displayVolumeUnit: VolumeUnit;
-  messages: ChatMessage[];
-  draft: string;
-  isSending: boolean;
-  isOnline: boolean;
-  undoingId: string | null;
-  onDraftChange: (value: string) => void;
-  onSend: (text: string) => void;
-  onRetry: (messageId: string) => void;
-  onUndo: (messageId: string) => void;
-}) {
+export function ActivityChat() {
+  const {
+    displayVolumeUnit,
+    messages,
+    draft,
+    isSending,
+    isOnline,
+    undoingId,
+    setDraft,
+    send,
+    retry,
+    undo,
+  } = useChatContext();
   const endRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
 
@@ -169,7 +153,7 @@ export function ActivityChat({
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    onSend(draft);
+    void send(draft);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -202,7 +186,7 @@ export function ActivityChat({
                   variant="outline"
                   className="rounded-full"
                   disabled={!isOnline || isSending}
-                  onClick={() => onSend(example)}
+                  onClick={() => void send(example)}
                 >
                   {example}
                 </Button>
@@ -226,7 +210,7 @@ export function ActivityChat({
                   key={message.id}
                   message={message}
                   isUndoing={undoingId === message.id}
-                  onUndo={() => onUndo(message.id)}
+                  onUndo={() => void undo(message.id)}
                 />
               );
             }
@@ -241,7 +225,7 @@ export function ActivityChat({
                       variant="outline"
                       className="mt-2 h-7"
                       disabled={isSending || !isOnline}
-                      onClick={() => onRetry(message.id)}
+                      onClick={() => void retry(message.id)}
                     >
                       <RotateCcw className="size-3.5" />
                       Retry
@@ -281,7 +265,7 @@ export function ActivityChat({
           className="max-h-40 min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-base outline-none placeholder:text-muted-foreground md:text-sm"
           value={draft}
           disabled={!isOnline}
-          onChange={(e) => onDraftChange(e.target.value)}
+          onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
         />
         <Button
@@ -302,8 +286,13 @@ export function ActivityChat({
   );
 }
 
-export function ClearChatButton({ onClear }: { onClear: () => void }) {
+export function ClearChatButton() {
+  const { messages, clear } = useChatContext();
   const [isConfirming, setIsConfirming] = useState(false);
+
+  if (messages.length === 0) {
+    return null;
+  }
 
   return (
     <>
@@ -339,7 +328,7 @@ export function ClearChatButton({ onClear }: { onClear: () => void }) {
               type="button"
               variant="destructive"
               onClick={() => {
-                onClear();
+                clear();
                 setIsConfirming(false);
               }}
             >

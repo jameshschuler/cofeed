@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthLoading } from "../components/AuthLoading";
+import { FeedsProvider } from "../components/feeds-context";
 import { LogBottleDialog } from "../components/LogBottleDialog";
 import { PrivateLayout } from "../components/PrivateLayout";
 import { PumpingLogList } from "../components/PumpingLogList";
+import { PumpingProvider } from "../components/pumping-context";
 import { RouteShell } from "../components/RouteShell";
 import { SessionRequired } from "../components/SessionRequired";
 import { useRouteScreen } from "../hooks/useRouteScreen";
@@ -39,27 +41,29 @@ function PumpingPage() {
   }
 
   return (
-    <RouteShell>
-      <PrivateLayout
-        screen="pumping"
-        errorMessage={errorMessage}
-        successMessage={successMessage}
-        headerAction={
-          <LogBottleDialog
-            state={feedsRouteState}
-            actions={feedsRouteActions}
-            preferredDisplayVolumeUnit={displayVolumeUnit}
-          />
-        }
-        onNavigate={goTo}
-      >
-        <PumpingLogList
-          state={pumpingRouteState}
-          actions={pumpingRouteActions}
-          preferredDisplayVolumeUnit={displayVolumeUnit}
-        />
-      </PrivateLayout>
-    </RouteShell>
+    <FeedsProvider
+      state={feedsRouteState}
+      actions={feedsRouteActions}
+      displayVolumeUnit={displayVolumeUnit}
+    >
+      <RouteShell>
+        <PrivateLayout
+          screen="pumping"
+          errorMessage={errorMessage}
+          successMessage={successMessage}
+          headerAction={<LogBottleDialog />}
+          onNavigate={goTo}
+        >
+          <PumpingProvider
+            state={pumpingRouteState}
+            actions={pumpingRouteActions}
+            displayVolumeUnit={displayVolumeUnit}
+          >
+            <PumpingLogList />
+          </PumpingProvider>
+        </PrivateLayout>
+      </RouteShell>
+    </FeedsProvider>
   );
 }
 

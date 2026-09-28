@@ -3,16 +3,11 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import type { FeedsActions, FeedsState } from "./FeedLogList";
+import { useFeedsContext } from "./feeds-context";
 import { getMaxPortionVolume } from "../lib/volume";
 
-export function EditBottleDialog({
-  state,
-  actions,
-}: {
-  state: FeedsState;
-  actions: FeedsActions;
-}) {
+export function EditBottleDialog() {
+  const { state, actions } = useFeedsContext();
   const open = state.edit.editingFeedId !== null;
 
   return (

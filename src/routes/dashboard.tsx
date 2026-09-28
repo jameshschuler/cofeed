@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AuthLoading } from "../components/AuthLoading";
 import { Dashboard } from "../components/Dashboard";
+import { DashboardProvider } from "../components/dashboard-context";
+import { FeedsProvider } from "../components/feeds-context";
 import { LogBottleDialog } from "../components/LogBottleDialog";
 import { PrivateLayout } from "../components/PrivateLayout";
 import { RouteShell } from "../components/RouteShell";
@@ -58,38 +60,42 @@ function DashboardPage() {
   }
 
   return (
-    <RouteShell>
-      <PrivateLayout
-        screen="dashboard"
-        errorMessage={errorMessage}
-        successMessage={successMessage}
-        headerAction={
-          <LogBottleDialog
-            state={feedsRouteState}
-            actions={feedsRouteActions}
-            preferredDisplayVolumeUnit={displayVolumeUnit}
-          />
-        }
-        onNavigate={goTo}
-      >
-        <Dashboard
-          feeds={feedsRouteState.list.logs}
-          weeklyFeeds={weeklyFeeds}
-          pumpingLogs={pumpingLogs}
-          weeklyPumpingLogs={weeklyPumpingLogs}
-          isLoadingActivity={feedsRouteState.list.isLoading}
-          isLoadingWeeklyStats={isLoadingWeeklyStats}
-          weeklyFeedError={weeklyFeedError}
-          weeklyPumpingError={weeklyPumpingError}
-          isUsingCachedActivity={isUsingCachedActivity}
-          lastSyncedAt={lastSyncedAt}
-          displayVolumeUnit={displayVolumeUnit}
-          householdOptions={householdOptions}
-          selectedBabyId={dashboardBabyId}
-          onSelectBaby={setDashboardBabyId}
-        />
-      </PrivateLayout>
-    </RouteShell>
+    <FeedsProvider
+      state={feedsRouteState}
+      actions={feedsRouteActions}
+      displayVolumeUnit={displayVolumeUnit}
+    >
+      <RouteShell>
+        <PrivateLayout
+          screen="dashboard"
+          errorMessage={errorMessage}
+          successMessage={successMessage}
+          headerAction={<LogBottleDialog />}
+          onNavigate={goTo}
+        >
+          <DashboardProvider
+            state={{
+              feeds: feedsRouteState.list.logs,
+              weeklyFeeds,
+              pumpingLogs,
+              weeklyPumpingLogs,
+              isLoadingActivity: feedsRouteState.list.isLoading,
+              isLoadingWeeklyStats,
+              weeklyFeedError,
+              weeklyPumpingError,
+              isUsingCachedActivity,
+              lastSyncedAt,
+              displayVolumeUnit,
+              householdOptions,
+              selectedBabyId: dashboardBabyId,
+            }}
+            actions={{ onSelectBaby: setDashboardBabyId }}
+          >
+            <Dashboard />
+          </DashboardProvider>
+        </PrivateLayout>
+      </RouteShell>
+    </FeedsProvider>
   );
 }
 

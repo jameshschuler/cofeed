@@ -1,4 +1,3 @@
-import { type FormEvent } from "react";
 import { ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -11,36 +10,21 @@ import {
 } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { useAuthFormContext } from "./auth-form-context";
 
-export function ResetPassword({
-  email,
-  password,
-  confirmPassword,
-  isSubmitting,
-  errorMessage,
-  successMessage,
-  isRecoverySession,
-  onEmailChange,
-  onPasswordChange,
-  onConfirmPasswordChange,
-  onRequestReset,
-  onUpdatePassword,
-  onGoToLogin,
-}: {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  isSubmitting: boolean;
-  errorMessage: string | null;
-  successMessage: string | null;
-  isRecoverySession: boolean;
-  onEmailChange: (value: string) => void;
-  onPasswordChange: (value: string) => void;
-  onConfirmPasswordChange: (value: string) => void;
-  onRequestReset: (event: FormEvent<HTMLFormElement>) => void;
-  onUpdatePassword: (event: FormEvent<HTMLFormElement>) => void;
-  onGoToLogin: () => void;
-}) {
+export function ResetPassword() {
+  const {
+    state: {
+      email,
+      password,
+      confirmPassword,
+      isSubmitting,
+      errorMessage,
+      successMessage,
+      isRecoverySession,
+    },
+    actions,
+  } = useAuthFormContext();
   return (
     <Card className="flex h-full w-full flex-col rounded-2xl sm:mx-auto sm:h-auto sm:max-w-md sm:self-center">
       <CardHeader>
@@ -56,7 +40,9 @@ export function ResetPassword({
       <CardContent className="flex flex-1 flex-col">
         <form
           className="flex h-full flex-col gap-4"
-          onSubmit={isRecoverySession ? onUpdatePassword : onRequestReset}
+          onSubmit={
+            isRecoverySession ? actions.onUpdatePassword : actions.onRequestReset
+          }
         >
           <div className="space-y-4">
             {!isRecoverySession ? (
@@ -71,7 +57,7 @@ export function ResetPassword({
                     autoComplete="email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={(event) => onEmailChange(event.target.value)}
+                    onChange={(event) => actions.onEmailChange(event.target.value)}
                     required
                   />
                 </div>
@@ -88,7 +74,7 @@ export function ResetPassword({
                       className="pl-9"
                       autoComplete="new-password"
                       value={password}
-                      onChange={(event) => onPasswordChange(event.target.value)}
+                      onChange={(event) => actions.onPasswordChange(event.target.value)}
                       required
                     />
                   </div>
@@ -103,7 +89,9 @@ export function ResetPassword({
                       className="pl-9"
                       autoComplete="new-password"
                       value={confirmPassword}
-                      onChange={(event) => onConfirmPasswordChange(event.target.value)}
+                      onChange={(event) =>
+                        actions.onConfirmPasswordChange(event.target.value)
+                      }
                       required
                     />
                   </div>
@@ -139,7 +127,12 @@ export function ResetPassword({
         </form>
       </CardContent>
       <CardFooter className="mt-auto">
-        <Button type="button" variant="ghost" className="w-full" onClick={onGoToLogin}>
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full"
+          onClick={() => actions.onNavigate("login")}
+        >
           <ChevronLeft className="size-4" />
           Back to sign in
         </Button>

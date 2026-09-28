@@ -1,42 +1,17 @@
 import { useState } from "react";
-import {
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  type ChartOptions,
-} from "chart.js";
+import type { ChartOptions } from "chart.js";
 import { BarChart3, LineChart } from "lucide-react";
 import { Bar, Line } from "react-chartjs-2";
 import { Button } from "./ui/button";
+import {
+  getLocalDayKey,
+  getRecentDays,
+  groupByLocalDay,
+  toDisplayVolume,
+  toMl,
+} from "../lib/activity-format";
+import "../lib/chart";
 import type { PumpingLogItem, VolumeUnit } from "../types/route-types";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Tooltip,
-);
-
-ChartJS.defaults.font.family = '"Nunito Variable", sans-serif';
-
-const ML_PER_OZ = 29.5735;
-
-function toMl(value: number, unit: VolumeUnit) {
-  return unit === "ml" ? value : value * ML_PER_OZ;
-}
-
-function dayKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export function PumpingStats({
   sessions,
@@ -50,29 +25,21 @@ export function PumpingStats({
   errorMessage?: string | null;
 }) {
   const [chartType, setChartType] = useState<"line" | "bar">("line");
-  const today = new Date();
-  const days = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() - (6 - index));
-    return date;
-  });
-  const totals = days.map((date) => {
-    const key = dayKey(date);
-    return sessions
-      .filter((session) => dayKey(new Date(session.started_at)) === key)
-      .reduce((sum, session) => sum + toMl(session.volume, session.unit), 0);
-  });
-  const format = (value: number) =>
-    displayVolumeUnit === "ml"
-      ? Math.round(value)
-      : Number((value / ML_PER_OZ).toFixed(1));
+  const days = getRecentDays(7);
+  const totalsByDay = new Map(
+    groupByLocalDay(sessions).map(({ dayKey, items }) => [
+      dayKey,
+      items.reduce((sum, session) => sum + toMl(session.volume, session.unit), 0),
+    ]),
+  );
+  const totals = days.map((date) => totalsByDay.get(getLocalDayKey(date)) ?? 0);
   const primary = "oklch(0.48 0.12 155)";
   const data = {
     labels: days.map((date) => date.toLocaleDateString([], { weekday: "short" })),
     datasets: [
       {
         label: "Pumped",
-        data: totals.map(format),
+        data: totals.map((value) => toDisplayVolume(value, displayVolumeUnit)),
         borderColor: primary,
         backgroundColor: primary,
         pointRadius: 3,
