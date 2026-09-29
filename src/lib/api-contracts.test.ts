@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   createFeedRequestSchema,
   createPumpingRequestSchema,
+  householdNameSchema,
+  MAX_HOUSEHOLD_NAME_LENGTH,
   updateBabyProfileRequestSchema,
 } from "./api-contracts";
 
@@ -73,6 +75,19 @@ describe("activity request contracts", () => {
         dateOfBirth: todayInKiritimati,
         timezone: "Pacific/Pago_Pago",
       }).success,
+    ).toBe(false);
+  });
+});
+
+describe("householdNameSchema", () => {
+  it("trims names and accepts reasonable ones", () => {
+    expect(householdNameSchema.parse("  Smith Family  ")).toBe("Smith Family");
+  });
+
+  it("rejects blank and overly long names", () => {
+    expect(householdNameSchema.safeParse("   ").success).toBe(false);
+    expect(
+      householdNameSchema.safeParse("x".repeat(MAX_HOUSEHOLD_NAME_LENGTH + 1)).success,
     ).toBe(false);
   });
 });

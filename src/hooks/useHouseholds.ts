@@ -10,6 +10,7 @@ import {
   listHouseholdMembers,
   listHouseholds,
   removeHouseholdMember,
+  renameHousehold as renameHouseholdOnServer,
   setPreferredHousehold as setPreferredHouseholdOnServer,
 } from "../server/households";
 import { getProfile } from "../server/profile";
@@ -68,6 +69,7 @@ export function useHouseholds({
   const [preferredPrompt, setPreferredPrompt] =
     useState<PreferredHouseholdPrompt | null>(null);
   const [settingPreferredId, setSettingPreferredId] = useState<string | null>(null);
+  const [renamingHouseholdId, setRenamingHouseholdId] = useState<string | null>(null);
 
   async function loadHouseholds() {
     if (!userId) {
@@ -159,6 +161,28 @@ export function useHouseholds({
         householdName: joined.householdName,
       });
     }
+  }
+
+  async function renameHousehold(householdId: string, name: string) {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setRenamingHouseholdId(householdId);
+    try {
+      await renameHouseholdOnServer({
+        data: { accessToken: await getAccessToken(), householdId, name },
+      });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to rename household.",
+      );
+      return false;
+    } finally {
+      setRenamingHouseholdId(null);
+    }
+
+    await loadHouseholds();
+    setSuccessMessage("Household renamed.");
+    return true;
   }
 
   async function setPreferredHousehold(householdId: string) {
@@ -282,6 +306,8 @@ export function useHouseholds({
     preferredPrompt,
     settingPreferredId,
     setPreferredHousehold,
+    renamingHouseholdId,
+    renameHousehold,
     dismissPreferredPrompt: () => setPreferredPrompt(null),
   };
 }
