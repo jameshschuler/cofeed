@@ -9,6 +9,7 @@ import {
   households,
   userPreferences,
 } from "../db/schema";
+import { householdNameSchema } from "../lib/api-contracts";
 import { authenticated, authenticate } from "./auth";
 import {
   ensurePreferredHousehold,
@@ -186,4 +187,31 @@ export const setPreferredHousehold = createServerFn({ method: "POST" })
     const userId = await authenticate(data.accessToken);
     await db.transaction((tx) => setPreferredMembership(tx, userId, data.householdId));
     return { householdId: data.householdId };
+  });
+
+export const renameHousehold = createServerFn({ method: "POST" })
+  .validator(
+    authenticated.extend({ householdId: z.string().uuid(), name: householdNameSchema }),
+  )
+  .handler(async ({ data }) => {
+    const userId = await authenticate(data.accessToken);
+    const [membership] = await db
+      .select({ role: householdMembers.role })
+      .from(householdMembers)
+      .where(
+        and(
+          eq(householdMembers.householdId, data.householdId),
+          eq(householdMembers.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (membership?.role !== "owner") {
+      throw new Error("Only household owners can rename the household.");
+    }
+    const [household] = await db
+      .update(households)
+      .set({ name: data.name, updatedAt: new Date() })
+      .where(eq(households.id, data.householdId))
+      .returning({ id: households.id, name: households.name });
+    return household;
   });

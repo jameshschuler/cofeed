@@ -18,6 +18,7 @@ export type HouseholdState = {
   isSavingBabyProfile: boolean;
   preferredPrompt: PreferredHouseholdPrompt | null;
   settingPreferredId: string | null;
+  renamingHouseholdId: string | null;
 };
 
 export type HouseholdActions = {
@@ -29,6 +30,7 @@ export type HouseholdActions = {
   onCopyHouseholdCode: (joinCode: string) => void;
   onSetPreferredHousehold: (householdId: string) => void;
   onDismissPreferredPrompt: () => void;
+  onRenameHousehold: (householdId: string, name: string) => Promise<boolean>;
 };
 
 const HouseholdContext = createContext<{

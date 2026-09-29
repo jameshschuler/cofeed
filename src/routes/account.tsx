@@ -59,6 +59,8 @@ function AccountPage() {
     settingPreferredId,
     setPreferredHousehold,
     dismissPreferredPrompt,
+    renamingHouseholdId,
+    renameHousehold,
   } = useRouteScreen("account");
 
   if (!isAuthReady || !isPreferencesReady) {
@@ -124,6 +126,7 @@ function AccountPage() {
               isSavingBabyProfile,
               preferredPrompt,
               settingPreferredId,
+              renamingHouseholdId,
             } satisfies HouseholdState
           }
           actions={
@@ -139,6 +142,7 @@ function AccountPage() {
               onSetPreferredHousehold: (householdId) =>
                 void setPreferredHousehold(householdId),
               onDismissPreferredPrompt: dismissPreferredPrompt,
+              onRenameHousehold: renameHousehold,
             } satisfies HouseholdActions
           }
         >

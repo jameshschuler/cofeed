@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Clipboard, House } from "lucide-react";
+import { Clipboard, House, Pencil } from "lucide-react";
 import { useHouseholdContext } from "./household-context";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -7,6 +7,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Badge } from "./ui/badge";
 import { EmptyState } from "./ui/empty-state";
+import { householdNameSchema, MAX_HOUSEHOLD_NAME_LENGTH } from "../lib/api-contracts";
 
 export function Households() {
   const { state, actions } = useHouseholdContext();
@@ -23,6 +24,13 @@ export function Households() {
     ).values(),
   );
 
+  const [renaming, setRenaming] = useState<{
+    householdId: string;
+    name: string;
+  } | null>(null);
+  const renameCheck = renaming ? householdNameSchema.safeParse(renaming.name) : null;
+  const renameError =
+    renameCheck && !renameCheck.success ? renameCheck.error.issues[0]?.message : null;
   const ownedHousehold = uniqueHouseholds.find(
     (household) => household.member_role === "owner",
   );
@@ -86,9 +94,26 @@ export function Households() {
                         </Button>
                       ) : null}
                       {household.member_role === "owner" ? (
-                        <span className="px-2 text-xs font-medium text-muted-foreground">
-                          Owner
-                        </span>
+                        <>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            aria-label="Rename household"
+                            title="Rename household"
+                            onClick={() =>
+                              setRenaming({
+                                householdId: household.household_id,
+                                name: household.household_name,
+                              })
+                            }
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                          <span className="px-2 text-xs font-medium text-muted-foreground">
+                            Owner
+                          </span>
+                        </>
                       ) : (
                         <Button
                           type="button"
@@ -332,6 +357,67 @@ export function Households() {
               {pendingConfirmation?.type === "remove" ? "Remove" : "Leave"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={renaming !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenaming(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename household</DialogTitle>
+          </DialogHeader>
+          <form
+            className="space-y-3"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (!renaming || !renameCheck?.success) {
+                return;
+              }
+              if (
+                await actions.onRenameHousehold(renaming.householdId, renameCheck.data)
+              ) {
+                setRenaming(null);
+              }
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="household-name">Name</Label>
+              <Input
+                id="household-name"
+                value={renaming?.name ?? ""}
+                maxLength={MAX_HOUSEHOLD_NAME_LENGTH}
+                autoFocus
+                onChange={(event) =>
+                  setRenaming((current) =>
+                    current ? { ...current, name: event.target.value } : current,
+                  )
+                }
+              />
+              {renameError ? (
+                <p className="text-xs text-destructive">{renameError}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Everyone in the household sees this name.
+                </p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setRenaming(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!renameCheck?.success || state.renamingHouseholdId !== null}
+              >
+                {state.renamingHouseholdId ? "Saving" : "Save"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
       <Dialog
