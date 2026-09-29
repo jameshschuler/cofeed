@@ -4,6 +4,16 @@ import { z } from "zod";
 export const volumeUnitSchema = z.enum(["oz", "ml"]);
 export const activitySourceSchema = z.enum(["cofeed", "nara"]);
 
+export const MAX_HOUSEHOLD_NAME_LENGTH = 60;
+export const householdNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Enter a household name.")
+  .max(
+    MAX_HOUSEHOLD_NAME_LENGTH,
+    `Keep the name under ${MAX_HOUSEHOLD_NAME_LENGTH} characters.`,
+  );
+
 export const createFeedRequestSchema = z.object({
   babyId: z.string().uuid(),
   startedAt: z.string().datetime(),
