@@ -108,7 +108,7 @@ export function PrivateLayout({
         <CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-0 pb-3 pt-0 sm:pb-4">
           {children}
         </CardContent>
-        <CardFooter className="mt-auto border-t px-0 py-2">
+        <CardFooter className="mt-auto border-t px-0 pt-2 pb-0">
           <div className="grid w-full grid-cols-4 gap-2 rounded-2xl bg-muted p-1">
             <Button
               type="button"

@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthLoading } from "../components/layout/AuthLoading";
 import { FeedsProvider } from "../contexts/feeds-context";
 import { LogBottleDialog } from "../components/activity/LogBottleDialog";
 import { PrivateLayout } from "../components/layout/PrivateLayout";
@@ -24,15 +23,10 @@ function PumpingPage() {
     pumpingRouteActions,
   } = useRouteScreen("pumping");
 
-  if (
-    !isAuthReady ||
-    !isPreferencesReady ||
-    feedsRouteState.compose.volumeUnit === null
-  ) {
-    return <AuthLoading />;
-  }
+  const isReady =
+    isAuthReady && isPreferencesReady && feedsRouteState.compose.volumeUnit !== null;
 
-  if (!session) {
+  if (isAuthReady && !session) {
     return (
       <RouteShell>
         <SessionRequired onGoToLogin={() => goTo("login")} />
@@ -42,7 +36,13 @@ function PumpingPage() {
 
   return (
     <FeedsProvider
-      state={feedsRouteState}
+      state={{
+        ...feedsRouteState,
+        list: {
+          ...feedsRouteState.list,
+          isLoading: !isReady || feedsRouteState.list.isLoading,
+        },
+      }}
       actions={feedsRouteActions}
       displayVolumeUnit={displayVolumeUnit}
     >
@@ -51,11 +51,17 @@ function PumpingPage() {
           screen="pumping"
           errorMessage={errorMessage}
           successMessage={successMessage}
-          headerAction={<LogBottleDialog />}
+          headerAction={isReady ? <LogBottleDialog /> : undefined}
           onNavigate={goTo}
         >
           <PumpingProvider
-            state={pumpingRouteState}
+            state={{
+              ...pumpingRouteState,
+              list: {
+                ...pumpingRouteState.list,
+                isLoading: !isReady || pumpingRouteState.list.isLoading,
+              },
+            }}
             actions={pumpingRouteActions}
             displayVolumeUnit={displayVolumeUnit}
           >
