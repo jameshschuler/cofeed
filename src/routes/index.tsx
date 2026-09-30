@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthLoading } from "../components/AuthLoading";
-import { Home } from "../components/Home";
-import { RouteShell } from "../components/RouteShell";
+import { AuthLoading } from "../components/layout/AuthLoading";
+import { Home } from "../components/home/Home";
+import { RouteShell } from "../components/layout/RouteShell";
 import { useRouteScreen } from "../hooks/useRouteScreen";
 
 function HomePage() {

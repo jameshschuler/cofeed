@@ -2,16 +2,16 @@ import { useState } from "react";
 import type { ChartOptions } from "chart.js";
 import { BarChart3, LineChart } from "lucide-react";
 import { Bar, Line } from "react-chartjs-2";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   getLocalDayKey,
   getRecentDays,
   groupByLocalDay,
   toDisplayVolume,
   toMl,
-} from "../lib/activity-format";
-import "../lib/chart";
-import type { PumpingLogItem, VolumeUnit } from "../types/route-types";
+} from "../../lib/activity-format";
+import "../../lib/chart";
+import type { PumpingLogItem, VolumeUnit } from "../../types/route-types";
 
 export function PumpingStats({
   sessions,

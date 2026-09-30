@@ -15,8 +15,8 @@ import type {
   Screen,
   VolumeUnit,
 } from "../types/route-types";
-import type { FeedsActions, FeedsState } from "../components/feeds-context";
-import type { PumpingActions, PumpingState } from "../components/pumping-context";
+import type { FeedsActions, FeedsState } from "../contexts/feeds-context";
+import type { PumpingActions, PumpingState } from "../contexts/pumping-context";
 import { useFeedData } from "./useFeedData";
 import { toMl } from "../lib/activity-format";
 import { toDateInputValue, toDateTimeInputValue } from "../lib/timezone";

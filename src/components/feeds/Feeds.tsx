@@ -1,5 +1,5 @@
 import { FeedLogList } from "./FeedLogList";
-import { useFeedsContext } from "./feeds-context";
+import { useFeedsContext } from "../../contexts/feeds-context";
 
 export function Feeds() {
   const { state } = useFeedsContext();

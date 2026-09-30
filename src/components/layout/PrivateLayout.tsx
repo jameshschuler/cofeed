@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { Droplet, LayoutDashboard, MessageCircle, Milk, Settings } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
@@ -9,8 +9,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import type { PrivateScreen } from "../types/route-types";
+} from "../ui/card";
+import type { PrivateScreen } from "../../types/route-types";
 
 const SCREEN_TITLES: Record<PrivateScreen, string> = {
   dashboard: "Dashboard",

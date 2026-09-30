@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ActivityChat, ClearChatButton } from "../components/ActivityChat";
-import { ActivityChatProvider } from "../components/chat-context";
-import { AuthLoading } from "../components/AuthLoading";
-import { PrivateLayout } from "../components/PrivateLayout";
-import { RouteShell } from "../components/RouteShell";
-import { SessionRequired } from "../components/SessionRequired";
+import { ActivityChat } from "../components/chat/ActivityChat";
+import { ClearChatButton } from "../components/chat/ClearChatButton";
+import { ActivityChatProvider } from "../contexts/chat-context";
+import { AuthLoading } from "../components/layout/AuthLoading";
+import { PrivateLayout } from "../components/layout/PrivateLayout";
+import { RouteShell } from "../components/layout/RouteShell";
+import { SessionRequired } from "../components/layout/SessionRequired";
 import { useRouteScreen } from "../hooks/useRouteScreen";
 
 function ChatPage() {

@@ -1,10 +1,10 @@
 import { Loader2 } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { useFeedsContext } from "./feeds-context";
-import { getMaxPortionVolume } from "../lib/volume";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { useFeedsContext } from "../../contexts/feeds-context";
+import { getMaxPortionVolume } from "../../lib/volume";
 
 export function EditBottleDialog() {
   const { state, actions } = useFeedsContext();

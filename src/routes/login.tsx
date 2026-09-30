@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthLoading } from "../components/AuthLoading";
-import { Login } from "../components/Login";
-import { AuthFormProvider, toAuthFormValue } from "../components/auth-form-context";
-import { RouteShell } from "../components/RouteShell";
+import { AuthLoading } from "../components/layout/AuthLoading";
+import { Login } from "../components/auth/Login";
+import { AuthFormProvider, toAuthFormValue } from "../contexts/auth-form-context";
+import { RouteShell } from "../components/layout/RouteShell";
 import { useRouteScreen } from "../hooks/useRouteScreen";
 
 function LoginPage() {

@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthLoading } from "../components/AuthLoading";
-import { FeedsProvider } from "../components/feeds-context";
-import { LogBottleDialog } from "../components/LogBottleDialog";
-import { PrivateLayout } from "../components/PrivateLayout";
-import { PumpingLogList } from "../components/PumpingLogList";
-import { PumpingProvider } from "../components/pumping-context";
-import { RouteShell } from "../components/RouteShell";
-import { SessionRequired } from "../components/SessionRequired";
+import { AuthLoading } from "../components/layout/AuthLoading";
+import { FeedsProvider } from "../contexts/feeds-context";
+import { LogBottleDialog } from "../components/activity/LogBottleDialog";
+import { PrivateLayout } from "../components/layout/PrivateLayout";
+import { PumpingLogList } from "../components/pumping/PumpingLogList";
+import { PumpingProvider } from "../contexts/pumping-context";
+import { RouteShell } from "../components/layout/RouteShell";
+import { SessionRequired } from "../components/layout/SessionRequired";
 import { useRouteScreen } from "../hooks/useRouteScreen";
 
 function PumpingPage() {
