@@ -3,6 +3,7 @@ import type { ChartOptions } from "chart.js";
 import { BarChart3, LineChart } from "lucide-react";
 import { Bar, Line } from "react-chartjs-2";
 import { Button } from "../ui/button";
+import { ChartSkeleton } from "./ChartSkeleton";
 import {
   getLocalDayKey,
   getRecentDays,
@@ -95,7 +96,7 @@ export function PumpingStats({
         ) : null}
       </div>
       {isLoading ? (
-        <p className="mt-3 text-xs text-muted-foreground">Loading pumping stats...</p>
+        <ChartSkeleton label="Loading pumping stats…" chartHeightClass="h-32" />
       ) : errorMessage ? (
         <p className="mt-3 text-xs text-destructive">{errorMessage}</p>
       ) : (

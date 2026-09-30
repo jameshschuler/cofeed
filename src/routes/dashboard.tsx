@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthLoading } from "../components/layout/AuthLoading";
 import { Dashboard } from "../components/dashboard/Dashboard";
 import { DashboardProvider } from "../contexts/dashboard-context";
 import { FeedsProvider } from "../contexts/feeds-context";
@@ -47,11 +46,9 @@ function DashboardPage() {
     ).values(),
   );
 
-  if (!isAuthReady || !isPreferencesReady) {
-    return <AuthLoading />;
-  }
+  const isReady = isAuthReady && isPreferencesReady;
 
-  if (!session) {
+  if (isAuthReady && !session) {
     return (
       <RouteShell>
         <SessionRequired onGoToLogin={() => goTo("login")} />
@@ -70,7 +67,7 @@ function DashboardPage() {
           screen="dashboard"
           errorMessage={errorMessage}
           successMessage={successMessage}
-          headerAction={<LogBottleDialog />}
+          headerAction={isReady ? <LogBottleDialog /> : undefined}
           onNavigate={goTo}
         >
           <DashboardProvider
@@ -79,8 +76,8 @@ function DashboardPage() {
               weeklyFeeds,
               pumpingLogs,
               weeklyPumpingLogs,
-              isLoadingActivity: feedsRouteState.list.isLoading,
-              isLoadingWeeklyStats,
+              isLoadingActivity: !isReady || feedsRouteState.list.isLoading,
+              isLoadingWeeklyStats: !isReady || isLoadingWeeklyStats,
               weeklyFeedError,
               weeklyPumpingError,
               isUsingCachedActivity,

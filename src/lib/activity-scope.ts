@@ -1,4 +1,5 @@
-import type { Screen } from "../types/route-types";
+import type { ActivityRange } from "./activity-range";
+import type { FeedFilter, Screen } from "../types/route-types";
 
 export const ALL_HOUSEHOLDS_CACHE_KEY = "all-households";
 
@@ -15,4 +16,10 @@ export function getActivityScope(
     return { queryBabyId: babyId as string | null, cacheKey: babyId };
   }
   return { queryBabyId: null, cacheKey: ALL_HOUSEHOLDS_CACHE_KEY };
+}
+
+// The dashboard's recent activity covers the rolling last 24 hours; history screens use
+// the day the user picked.
+export function getListRange(screen: Screen, filter: FeedFilter): ActivityRange {
+  return screen === "dashboard" ? "last24h" : filter;
 }

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getAccessToken } from "../lib/auth-token";
-import { getActivityScope } from "../lib/activity-scope";
+import type { ActivityRange } from "../lib/activity-range";
+import { getActivityScope, getListRange } from "../lib/activity-scope";
 import { getDeviceTimezone } from "../lib/timezone";
 import {
   readActivityCache,
@@ -84,7 +85,7 @@ export function useFeedData({
 
   async function refreshFeedLogs(
     babyId: string,
-    filter: FeedFilter = feedFilter,
+    filter: ActivityRange = feedFilter,
     date: string | null = selectedDate,
   ) {
     const { queryBabyId, cacheKey } = getActivityScope(screen, babyId, viewBabyId);
@@ -124,7 +125,7 @@ export function useFeedData({
 
   async function refreshPumpingLogs(
     babyId: string,
-    filter: FeedFilter = feedFilter,
+    filter: ActivityRange = feedFilter,
     date: string | null = selectedDate,
   ) {
     const { queryBabyId, cacheKey } = getActivityScope(screen, babyId, viewBabyId);
@@ -258,14 +259,10 @@ export function useFeedData({
         setActiveBabyId(babyId);
         setTargetHouseholdName(householdCount > 1 ? householdName : null);
         const dateForScreen = screen === "dashboard" ? null : selectedDate;
-        await refreshFeedLogs(
-          babyId,
-          screen === "dashboard" ? "today" : feedFilter,
-          dateForScreen,
-        );
+        await refreshFeedLogs(babyId, getListRange(screen, feedFilter), dateForScreen);
         await refreshPumpingLogs(
           babyId,
-          screen === "dashboard" ? "today" : feedFilter,
+          getListRange(screen, feedFilter),
           dateForScreen,
         );
 

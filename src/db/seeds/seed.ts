@@ -3,6 +3,7 @@ import "dotenv/config";
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { db, client } from "../client";
+import { buildSeedSchedule } from "./schedule";
 import {
   authUsers,
   babies,
@@ -16,7 +17,6 @@ import {
 const DEFAULT_SEED_EMAIL = "jameshschuler1+cofeed@gmail.com";
 const CO_PARENT_EMAIL = "jameshschuler1+test1@gmail.com";
 const TEST_JOIN_CODE = "TEST42";
-const HOUR_MS = 60 * 60 * 1000;
 
 type Role = "owner" | "caregiver";
 
@@ -135,8 +135,8 @@ async function upsertPreferences(userId: string, profileName: string) {
     });
 }
 
-// The seed user's default household, shared with a co-parent, with a few days of
-// feeds logged by both. Feeds and pumping logs are replaced on every run so reruns
+// The seed user's default household, shared with a co-parent, with the last week of
+// feeds (logged by both) and pumping sessions. Feeds and pumping logs are replaced on every run so reruns
 // always show recent data.
 async function seedUserHousehold() {
   const seedEmail = process.env.SEED_USER_EMAIL ?? DEFAULT_SEED_EMAIL;
@@ -164,39 +164,26 @@ async function seedUserHousehold() {
   await db.delete(feedLogs).where(eq(feedLogs.babyId, babyId));
   await db.delete(pumpingLogs).where(eq(pumpingLogs.babyId, babyId));
 
-  const dailyFeeds = [
-    { hoursAgo: 21, formulaMl: 75, breastMilkMl: 0 },
-    { hoursAgo: 18, formulaMl: 45, breastMilkMl: 45 },
-    { hoursAgo: 15, formulaMl: 0, breastMilkMl: 85 },
-    { hoursAgo: 9, formulaMl: 95, breastMilkMl: 0 },
-    { hoursAgo: 6, formulaMl: 45, breastMilkMl: 45 },
-    { hoursAgo: 3, formulaMl: 0, breastMilkMl: 85 },
-    { hoursAgo: 1, formulaMl: 95, breastMilkMl: 0 },
-  ];
-  const daysOfHistory = 4;
-  const now = Date.now();
-  const dayOffsets = Array.from({ length: daysOfHistory }, (_, index) => index);
+  const { feeds, pumps } = buildSeedSchedule();
 
   await db.insert(feedLogs).values(
-    dayOffsets.flatMap((dayOffset) =>
-      dailyFeeds.map((feed, feedIndex) => ({
-        babyId,
-        startedAt: new Date(now - (dayOffset * 24 + feed.hoursAgo) * HOUR_MS),
-        formulaPortionVolume: feed.formulaMl || null,
-        formulaPortionUnit: feed.formulaMl ? ("ml" as const) : null,
-        breastMilkPortionVolume: feed.breastMilkMl || null,
-        breastMilkPortionUnit: feed.breastMilkMl ? ("ml" as const) : null,
-        idempotencyKey: randomUUID(),
-        createdByUserId: (dayOffset + feedIndex) % 2 === 0 ? userId : coParentId,
-      })),
-    ),
+    feeds.map((feed) => ({
+      babyId,
+      startedAt: feed.startedAt,
+      formulaPortionVolume: feed.formulaMl || null,
+      formulaPortionUnit: feed.formulaMl ? ("ml" as const) : null,
+      breastMilkPortionVolume: feed.breastMilkMl || null,
+      breastMilkPortionUnit: feed.breastMilkMl ? ("ml" as const) : null,
+      idempotencyKey: randomUUID(),
+      createdByUserId: feed.slot % 2 === 0 ? userId : coParentId,
+    })),
   );
 
   await db.insert(pumpingLogs).values(
-    dayOffsets.map((dayOffset) => ({
+    pumps.map((pump) => ({
       babyId,
-      startedAt: new Date(now - (dayOffset * 24 + 12) * HOUR_MS),
-      volume: 120 + dayOffset * 15,
+      startedAt: pump.startedAt,
+      volume: pump.volumeMl,
       unit: "ml" as const,
       idempotencyKey: randomUUID(),
       createdByUserId: userId,

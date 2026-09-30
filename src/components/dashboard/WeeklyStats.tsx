@@ -3,6 +3,7 @@ import type { ChartOptions } from "chart.js";
 import { BarChart3, LineChart } from "lucide-react";
 import { Bar, Line } from "react-chartjs-2";
 import { Button } from "../ui/button";
+import { ChartSkeleton } from "./ChartSkeleton";
 import {
   getLocalDayKey,
   getRecentDays,
@@ -100,7 +101,11 @@ export function WeeklyStats({
   return (
     <div className="rounded-lg border bg-muted/30 px-3 py-3 shadow-sm">
       {isLoading ? (
-        <p className="text-xs text-muted-foreground">Loading feed stats...</p>
+        <ChartSkeleton
+          label="Loading feed stats…"
+          chartHeightClass="h-40"
+          withMetricTabs
+        />
       ) : errorMessage ? (
         <p className="text-xs text-destructive">{errorMessage}</p>
       ) : (

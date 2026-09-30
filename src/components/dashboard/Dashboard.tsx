@@ -6,6 +6,7 @@ import {
   formatTimeSince,
   formatVolume,
   getFeedVolumesMl,
+  getLocalDayKey,
   sumFeedVolumesMl,
 } from "../../lib/activity-format";
 import { useDashboardContext } from "../../contexts/dashboard-context";
@@ -44,7 +45,10 @@ export function Dashboard() {
   const preferredOption = householdOptions.find((option) => option.isPreferred);
   const [currentTime] = useState(() => Date.now());
 
-  const todayVolumes = sumFeedVolumesMl(feeds);
+  const todayKey = getLocalDayKey(new Date(currentTime));
+  const todayVolumes = sumFeedVolumesMl(
+    feeds.filter((feed) => getLocalDayKey(new Date(feed.started_at)) === todayKey),
+  );
 
   const lastFeedStartedAt = feeds[0]?.started_at ?? null;
   const recentActivities = [
@@ -158,7 +162,10 @@ export function Dashboard() {
             errorMessage={weeklyPumpingError}
           />
         </div>
-        <p className="mt-4 text-sm font-medium text-foreground">Recent activity</p>
+        <div className="mt-4 flex items-baseline justify-between gap-2">
+          <p className="text-sm font-medium text-foreground">Recent activity</p>
+          <p className="text-xs text-muted-foreground">Last 24 hours</p>
+        </div>
         {isLoadingActivity ? (
           <div className="mt-3 space-y-3 pr-1">
             <span className="sr-only">Loading recent activity…</span>
@@ -265,8 +272,8 @@ export function Dashboard() {
         ) : (
           <EmptyState
             icon={Milk}
-            title="No bottles logged today"
-            description="Tap + to log your first feed."
+            title="Nothing logged in the last 24 hours"
+            description="Tap + to log a feed or pumping session."
           />
         )}
       </div>
