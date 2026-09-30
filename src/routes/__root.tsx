@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Home } from "lucide-react";
-import { AppShell } from "../components/AppShell";
+import { AppShell } from "../components/layout/AppShell";
 import { buttonVariants } from "../components/ui/button";
 import "../styles.css";
 import {

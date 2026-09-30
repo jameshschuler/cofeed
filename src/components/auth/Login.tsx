@@ -1,5 +1,5 @@
-import { ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
-import { Button } from "./ui/button";
+import { Baby, ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
@@ -7,38 +7,33 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { useAuthFormContext } from "./auth-form-context";
+} from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { useAuthFormContext } from "../../contexts/auth-form-context";
 
-export function Signup() {
+export function Login() {
   const {
-    state: {
-      email,
-      password,
-      confirmPassword,
-      isSubmitting,
-      errorMessage,
-      successMessage,
-    },
+    state: { email, password, isSubmitting, errorMessage, successMessage },
     actions,
   } = useAuthFormContext();
   return (
     <Card className="flex h-full w-full flex-col rounded-2xl sm:mx-auto sm:h-auto sm:max-w-md sm:self-center">
       <CardHeader>
-        <CardTitle className="text-xl">Sign Up</CardTitle>
-        <CardDescription>Create an account with email and password.</CardDescription>
+        <CardTitle className="text-xl">Sign In</CardTitle>
+        <CardDescription>
+          Sign in with email and password to access your household.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
-        <form className="flex h-full flex-col gap-4" onSubmit={actions.onSignup}>
+        <form className="flex h-full flex-col gap-4" onSubmit={actions.onLogin}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="signup-email">Email</Label>
+              <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="signup-email"
+                  id="email"
                   type="email"
                   className="pl-9"
                   autoComplete="email"
@@ -51,14 +46,14 @@ export function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="signup-password">Password</Label>
+              <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="signup-password"
+                  id="password"
                   type="password"
                   className="pl-9"
-                  autoComplete="new-password"
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => actions.onPasswordChange(e.target.value)}
@@ -66,22 +61,17 @@ export function Signup() {
                 />
               </div>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="signup-confirm-password"
-                  type="password"
-                  className="pl-9"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => actions.onConfirmPasswordChange(e.target.value)}
-                  required
-                />
-              </div>
+          <div className="flex flex-1 items-center justify-center py-8 sm:py-10">
+            <div className="max-w-xs text-center">
+              <Baby className="mx-auto size-7 text-primary" />
+              <p className="mt-3 text-sm font-medium text-foreground">
+                Keep your household in sync.
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Log feeds, share updates, and stay close to the moments that matter.
+              </p>
             </div>
           </div>
 
@@ -102,11 +92,19 @@ export function Signup() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Creating account
+                  Signing in
                 </>
               ) : (
-                "Create Account"
+                "Sign In"
               )}
+            </Button>
+            <Button
+              type="button"
+              variant="link"
+              className="w-full"
+              onClick={() => actions.onNavigate("reset-password")}
+            >
+              Forgot password?
             </Button>
           </div>
         </form>
@@ -117,9 +115,9 @@ export function Signup() {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => actions.onNavigate("login")}
+            onClick={() => actions.onNavigate("signup")}
           >
-            Already have an account? Sign In
+            Need an account? Sign Up
           </Button>
           <Button
             type="button"

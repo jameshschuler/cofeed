@@ -1,5 +1,5 @@
-import { Baby, ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
-import { Button } from "./ui/button";
+import { ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
@@ -7,33 +7,38 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { useAuthFormContext } from "./auth-form-context";
+} from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { useAuthFormContext } from "../../contexts/auth-form-context";
 
-export function Login() {
+export function Signup() {
   const {
-    state: { email, password, isSubmitting, errorMessage, successMessage },
+    state: {
+      email,
+      password,
+      confirmPassword,
+      isSubmitting,
+      errorMessage,
+      successMessage,
+    },
     actions,
   } = useAuthFormContext();
   return (
     <Card className="flex h-full w-full flex-col rounded-2xl sm:mx-auto sm:h-auto sm:max-w-md sm:self-center">
       <CardHeader>
-        <CardTitle className="text-xl">Sign In</CardTitle>
-        <CardDescription>
-          Sign in with email and password to access your household.
-        </CardDescription>
+        <CardTitle className="text-xl">Sign Up</CardTitle>
+        <CardDescription>Create an account with email and password.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
-        <form className="flex h-full flex-col gap-4" onSubmit={actions.onLogin}>
+        <form className="flex h-full flex-col gap-4" onSubmit={actions.onSignup}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="signup-email">Email</Label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="email"
+                  id="signup-email"
                   type="email"
                   className="pl-9"
                   autoComplete="email"
@@ -46,14 +51,14 @@ export function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="signup-password">Password</Label>
               <div className="relative">
                 <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="password"
+                  id="signup-password"
                   type="password"
                   className="pl-9"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => actions.onPasswordChange(e.target.value)}
@@ -61,17 +66,22 @@ export function Login() {
                 />
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-1 items-center justify-center py-8 sm:py-10">
-            <div className="max-w-xs text-center">
-              <Baby className="mx-auto size-7 text-primary" />
-              <p className="mt-3 text-sm font-medium text-foreground">
-                Keep your household in sync.
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                Log feeds, share updates, and stay close to the moments that matter.
-              </p>
+            <div className="space-y-2">
+              <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="signup-confirm-password"
+                  type="password"
+                  className="pl-9"
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => actions.onConfirmPasswordChange(e.target.value)}
+                  required
+                />
+              </div>
             </div>
           </div>
 
@@ -92,19 +102,11 @@ export function Login() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
-                  Signing in
+                  Creating account
                 </>
               ) : (
-                "Sign In"
+                "Create Account"
               )}
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              className="w-full"
-              onClick={() => actions.onNavigate("reset-password")}
-            >
-              Forgot password?
             </Button>
           </div>
         </form>
@@ -115,9 +117,9 @@ export function Login() {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => actions.onNavigate("signup")}
+            onClick={() => actions.onNavigate("login")}
           >
-            Need an account? Sign Up
+            Already have an account? Sign In
           </Button>
           <Button
             type="button"

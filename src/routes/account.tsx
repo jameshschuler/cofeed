@@ -1,20 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Account } from "../components/Account";
-import { Households } from "../components/Households";
+import { Account } from "../components/account/Account";
+import { Households } from "../components/account/Households";
 import {
   HouseholdProvider,
   type HouseholdActions,
   type HouseholdState,
-} from "../components/household-context";
+} from "../contexts/household-context";
 import {
   AccountProvider,
   type AccountActions,
   type AccountState,
-} from "../components/account-context";
-import { AuthLoading } from "../components/AuthLoading";
-import { PrivateLayout } from "../components/PrivateLayout";
-import { RouteShell } from "../components/RouteShell";
-import { SessionRequired } from "../components/SessionRequired";
+} from "../contexts/account-context";
+import { AuthLoading } from "../components/layout/AuthLoading";
+import { PrivateLayout } from "../components/layout/PrivateLayout";
+import { RouteShell } from "../components/layout/RouteShell";
+import { SessionRequired } from "../components/layout/SessionRequired";
 import { useRouteScreen } from "../hooks/useRouteScreen";
 
 function AccountPage() {

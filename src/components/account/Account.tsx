@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Check, Download, FileDown, LogOut, Moon, Sun } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { useAccountContext } from "./account-context";
-import { useInstallPrompt } from "../hooks/useInstallPrompt";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { useAccountContext } from "../../contexts/account-context";
+import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 
 export function Account() {
   const { state, actions } = useAccountContext();

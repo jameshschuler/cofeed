@@ -1,5 +1,5 @@
 import { ChevronLeft, Loader2, Lock, Mail } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
@@ -7,10 +7,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { useAuthFormContext } from "./auth-form-context";
+} from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { useAuthFormContext } from "../../contexts/auth-form-context";
 
 export function ResetPassword() {
   const {

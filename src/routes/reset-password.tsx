@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ResetPassword } from "../components/ResetPassword";
-import { AuthFormProvider, toAuthFormValue } from "../components/auth-form-context";
-import { RouteShell } from "../components/RouteShell";
+import { ResetPassword } from "../components/auth/ResetPassword";
+import { AuthFormProvider, toAuthFormValue } from "../contexts/auth-form-context";
+import { RouteShell } from "../components/layout/RouteShell";
 import { useRouteScreen } from "../hooks/useRouteScreen";
 
 function ResetPasswordPage() {
