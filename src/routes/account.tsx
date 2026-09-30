@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Account } from "../components/account/Account";
+import { AccountActionsSection } from "../components/account/AccountActionsSection";
 import { Households } from "../components/account/Households";
 import {
   HouseholdProvider,
@@ -11,7 +12,6 @@ import {
   type AccountActions,
   type AccountState,
 } from "../contexts/account-context";
-import { AuthLoading } from "../components/layout/AuthLoading";
 import { PrivateLayout } from "../components/layout/PrivateLayout";
 import { RouteShell } from "../components/layout/RouteShell";
 import { SessionRequired } from "../components/layout/SessionRequired";
@@ -63,11 +63,7 @@ function AccountPage() {
     renameHousehold,
   } = useRouteScreen("account");
 
-  if (!isAuthReady || !isPreferencesReady) {
-    return <AuthLoading />;
-  }
-
-  if (!session) {
+  if (isAuthReady && !session) {
     return (
       <RouteShell>
         <SessionRequired onGoToLogin={() => goTo("login")} />
@@ -111,43 +107,44 @@ function AccountPage() {
           }
         >
           <Account />
+          <HouseholdProvider
+            state={
+              {
+                joinCode,
+                isJoiningHousehold,
+                households,
+                isLoadingHouseholds,
+                leavingHouseholdId,
+                membersByHousehold,
+                removingMemberKey,
+                babyProfile,
+                isSavingBabyProfile,
+                preferredPrompt,
+                settingPreferredId,
+                renamingHouseholdId,
+              } satisfies HouseholdState
+            }
+            actions={
+              {
+                onJoinCodeChange: setJoinCode,
+                onJoinHousehold: () => void joinHousehold(),
+                onLeaveHousehold: (householdId) => void leaveHousehold(householdId),
+                onRemoveMember: (householdId, memberUserId) =>
+                  void removeMember(householdId, memberUserId),
+                onSaveBabyProfile: (name, dateOfBirth) =>
+                  void saveBabyProfile(name, dateOfBirth),
+                onCopyHouseholdCode: handleCopyHouseholdCode,
+                onSetPreferredHousehold: (householdId) =>
+                  void setPreferredHousehold(householdId),
+                onDismissPreferredPrompt: dismissPreferredPrompt,
+                onRenameHousehold: renameHousehold,
+              } satisfies HouseholdActions
+            }
+          >
+            <Households />
+          </HouseholdProvider>
+          <AccountActionsSection />
         </AccountProvider>
-        <HouseholdProvider
-          state={
-            {
-              joinCode,
-              isJoiningHousehold,
-              households,
-              isLoadingHouseholds,
-              leavingHouseholdId,
-              membersByHousehold,
-              removingMemberKey,
-              babyProfile,
-              isSavingBabyProfile,
-              preferredPrompt,
-              settingPreferredId,
-              renamingHouseholdId,
-            } satisfies HouseholdState
-          }
-          actions={
-            {
-              onJoinCodeChange: setJoinCode,
-              onJoinHousehold: () => void joinHousehold(),
-              onLeaveHousehold: (householdId) => void leaveHousehold(householdId),
-              onRemoveMember: (householdId, memberUserId) =>
-                void removeMember(householdId, memberUserId),
-              onSaveBabyProfile: (name, dateOfBirth) =>
-                void saveBabyProfile(name, dateOfBirth),
-              onCopyHouseholdCode: handleCopyHouseholdCode,
-              onSetPreferredHousehold: (householdId) =>
-                void setPreferredHousehold(householdId),
-              onDismissPreferredPrompt: dismissPreferredPrompt,
-              onRenameHousehold: renameHousehold,
-            } satisfies HouseholdActions
-          }
-        >
-          <Households />
-        </HouseholdProvider>
       </PrivateLayout>
     </RouteShell>
   );

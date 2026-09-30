@@ -94,7 +94,7 @@ export function useRouteAuth({ screen, navigateTo }: UseRouteAuthOptions) {
   function goTo(nextScreen: Screen) {
     const requiresAuth = isPrivateScreen(nextScreen);
 
-    if (requiresAuth && !session) {
+    if (requiresAuth && isAuthReady && !session) {
       guardedNavigate("home");
       return;
     }

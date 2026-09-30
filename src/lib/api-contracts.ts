@@ -1,5 +1,6 @@
 import { getZonedTodayKey } from "./timezone";
 import { z } from "zod";
+import { ACTIVITY_RANGES } from "./activity-range";
 
 export const volumeUnitSchema = z.enum(["oz", "ml"]);
 export const activitySourceSchema = z.enum(["cofeed", "nara"]);
@@ -75,7 +76,7 @@ export const feedResponseSchema = z.object({
 export const listFeedsRequestSchema = z.object({
   babyId: z.string().uuid().nullable().optional(),
   since: z.string().datetime().nullable().optional(),
-  range: z.enum(["today", "week", "all", "date", "yesterday"]).default("all"),
+  range: z.enum(ACTIVITY_RANGES).default("all"),
   timezone: z.string().max(64).nullable().optional(),
   date: z.string().date().nullable().optional(),
   limit: z.number().int().min(1).max(100).default(50),

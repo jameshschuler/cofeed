@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthLoading } from "../components/layout/AuthLoading";
 import { Feeds } from "../components/feeds/Feeds";
 import { FeedsProvider } from "../contexts/feeds-context";
 import { LogBottleDialog } from "../components/activity/LogBottleDialog";
@@ -21,15 +20,10 @@ function FeedsPage() {
     feedsRouteActions,
   } = useRouteScreen("feeds");
 
-  if (
-    !isAuthReady ||
-    !isPreferencesReady ||
-    feedsRouteState.compose.volumeUnit === null
-  ) {
-    return <AuthLoading />;
-  }
+  const isReady =
+    isAuthReady && isPreferencesReady && feedsRouteState.compose.volumeUnit !== null;
 
-  if (!session) {
+  if (isAuthReady && !session) {
     return (
       <RouteShell>
         <SessionRequired onGoToLogin={() => goTo("login")} />
@@ -39,7 +33,13 @@ function FeedsPage() {
 
   return (
     <FeedsProvider
-      state={feedsRouteState}
+      state={{
+        ...feedsRouteState,
+        list: {
+          ...feedsRouteState.list,
+          isLoading: !isReady || feedsRouteState.list.isLoading,
+        },
+      }}
       actions={feedsRouteActions}
       displayVolumeUnit={displayVolumeUnit}
     >
@@ -48,7 +48,7 @@ function FeedsPage() {
           screen="feeds"
           errorMessage={errorMessage}
           successMessage={successMessage}
-          headerAction={<LogBottleDialog />}
+          headerAction={isReady ? <LogBottleDialog /> : undefined}
           onNavigate={goTo}
         >
           <Feeds />

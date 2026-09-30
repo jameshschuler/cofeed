@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ActivityChat } from "../components/chat/ActivityChat";
 import { ClearChatButton } from "../components/chat/ClearChatButton";
 import { ActivityChatProvider } from "../contexts/chat-context";
-import { AuthLoading } from "../components/layout/AuthLoading";
+import { ChatSkeleton } from "../components/chat/ChatSkeleton";
 import { PrivateLayout } from "../components/layout/PrivateLayout";
 import { RouteShell } from "../components/layout/RouteShell";
 import { SessionRequired } from "../components/layout/SessionRequired";
@@ -19,14 +19,25 @@ function ChatPage() {
     isPreferencesReady,
   } = useRouteScreen("chat");
 
-  if (!isAuthReady || !isPreferencesReady) {
-    return <AuthLoading />;
-  }
-
-  if (!session) {
+  if (isAuthReady && !session) {
     return (
       <RouteShell>
         <SessionRequired onGoToLogin={() => goTo("login")} />
+      </RouteShell>
+    );
+  }
+
+  if (!isAuthReady || !isPreferencesReady || !session) {
+    return (
+      <RouteShell>
+        <PrivateLayout
+          screen="chat"
+          errorMessage={errorMessage}
+          successMessage={successMessage}
+          onNavigate={goTo}
+        >
+          <ChatSkeleton />
+        </PrivateLayout>
       </RouteShell>
     );
   }

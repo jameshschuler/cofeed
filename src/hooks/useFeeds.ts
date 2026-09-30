@@ -18,6 +18,7 @@ import type {
 import type { FeedsActions, FeedsState } from "../contexts/feeds-context";
 import type { PumpingActions, PumpingState } from "../contexts/pumping-context";
 import { useFeedData } from "./useFeedData";
+import { getListRange } from "../lib/activity-scope";
 import { toMl } from "../lib/activity-format";
 import { toDateInputValue, toDateTimeInputValue } from "../lib/timezone";
 import { getMaxPortionVolume } from "../lib/volume";
@@ -177,10 +178,7 @@ export function useFeeds({
     setFeedBreastMilkPortionVolume("");
 
     await Promise.all([
-      feedData.refreshFeedLogs(
-        feedData.activeBabyId,
-        screen === "dashboard" ? "today" : feedFilter,
-      ),
+      feedData.refreshFeedLogs(feedData.activeBabyId, getListRange(screen, feedFilter)),
       feedData.refreshWeeklyStats(feedData.activeBabyId, { showLoading: false }),
     ]);
     return true;
@@ -234,7 +232,7 @@ export function useFeeds({
       await Promise.all([
         feedData.refreshPumpingLogs(
           feedData.activeBabyId,
-          screen === "dashboard" ? "today" : feedFilter,
+          getListRange(screen, feedFilter),
         ),
         feedData.refreshWeeklyStats(feedData.activeBabyId, { showLoading: false }),
       ]);
@@ -250,7 +248,7 @@ export function useFeeds({
   }
 
   async function refreshActivity(babyId: string) {
-    const filter = screen === "dashboard" ? "today" : feedFilter;
+    const filter = getListRange(screen, feedFilter);
     await Promise.all([
       feedData.refreshFeedLogs(babyId, filter),
       feedData.refreshPumpingLogs(babyId, filter),
@@ -437,10 +435,7 @@ export function useFeeds({
     setEditingFeedId(null);
     setSuccessMessage("Feed updated.");
     await Promise.all([
-      feedData.refreshFeedLogs(
-        feedData.activeBabyId,
-        screen === "dashboard" ? "today" : feedFilter,
-      ),
+      feedData.refreshFeedLogs(feedData.activeBabyId, getListRange(screen, feedFilter)),
       feedData.refreshWeeklyStats(feedData.activeBabyId, { showLoading: false }),
     ]);
   }
@@ -472,10 +467,7 @@ export function useFeeds({
     setEditingFeedId(null);
     setSuccessMessage("Feed deleted.");
     await Promise.all([
-      feedData.refreshFeedLogs(
-        feedData.activeBabyId,
-        screen === "dashboard" ? "today" : feedFilter,
-      ),
+      feedData.refreshFeedLogs(feedData.activeBabyId, getListRange(screen, feedFilter)),
       feedData.refreshWeeklyStats(feedData.activeBabyId, { showLoading: false }),
     ]);
   }

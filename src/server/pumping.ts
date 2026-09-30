@@ -17,11 +17,8 @@ import {
   requireBabyMembership,
   requireBabyWriteAccess,
 } from "./auth";
-import {
-  activityListQuerySchema,
-  getRangeBounds,
-  resolveRangeTimezone,
-} from "./activity-range";
+import { activityListQuerySchema, resolveRangeTimezone } from "./activity-range";
+import { getRangeBounds } from "../lib/activity-range";
 import { insertPumping } from "./activity-writes";
 
 export const listPumpingLogs = createServerFn({ method: "GET" })

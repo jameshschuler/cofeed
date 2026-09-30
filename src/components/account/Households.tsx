@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { Clipboard, House, Pencil } from "lucide-react";
+import { Clipboard, House } from "lucide-react";
 import { useHouseholdContext } from "../../contexts/household-context";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Badge } from "../ui/badge";
+import { Skeleton } from "../ui/skeleton";
 import { EmptyState } from "../ui/empty-state";
+import { HouseholdCard } from "./HouseholdCard";
 import {
   householdNameSchema,
   MAX_HOUSEHOLD_NAME_LENGTH,
@@ -52,170 +53,6 @@ export function Households() {
 
   return (
     <div className="flex flex-col gap-6 py-2 sm:gap-8 sm:py-3">
-      <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
-        <p className="text-sm font-medium text-foreground">Your households</p>
-        {uniqueHouseholds.length > 1 ? (
-          <p className="mt-1 text-xs text-muted-foreground">
-            New feeds and pumping sessions are logged to your preferred household.
-          </p>
-        ) : null}
-        <div className="mt-5 space-y-3">
-          {state.isLoadingHouseholds ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : uniqueHouseholds.length > 0 ? (
-            <div className="space-y-3">
-              {uniqueHouseholds.map((household) => (
-                <div key={`${household.household_id}-${household.member_role}`}>
-                  <div className="flex items-center justify-between gap-3 rounded-md border border-border/70 bg-background/60 px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="flex items-center gap-2 text-sm font-medium">
-                        <span className="truncate">{household.household_name}</span>
-                        {household.is_preferred && uniqueHouseholds.length > 1 ? (
-                          <Badge className="border-primary/40 text-primary">
-                            Preferred
-                          </Badge>
-                        ) : null}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {household.member_role} · {household.join_code}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      {!household.is_preferred ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={state.settingPreferredId !== null}
-                          onClick={() =>
-                            actions.onSetPreferredHousehold(household.household_id)
-                          }
-                        >
-                          {state.settingPreferredId === household.household_id
-                            ? "Saving"
-                            : "Set as preferred"}
-                        </Button>
-                      ) : null}
-                      {household.member_role === "owner" ? (
-                        <>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            aria-label="Rename household"
-                            title="Rename household"
-                            onClick={() =>
-                              setRenaming({
-                                householdId: household.household_id,
-                                name: household.household_name,
-                              })
-                            }
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <span className="px-2 text-xs font-medium text-muted-foreground">
-                            Owner
-                          </span>
-                        </>
-                      ) : (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          disabled={state.leavingHouseholdId === household.household_id}
-                          onClick={() =>
-                            setPendingConfirmation({
-                              type: "leave",
-                              householdId: household.household_id,
-                            })
-                          }
-                        >
-                          {state.leavingHouseholdId === household.household_id
-                            ? "Leaving"
-                            : "Leave"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  {household.member_role === "owner" ? (
-                    <div className="space-y-2 rounded-md border border-dashed px-3 py-2">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Members
-                      </p>
-                      {(state.membersByHousehold[household.household_id] ?? []).map(
-                        (member) => (
-                          <div
-                            key={member.user_id}
-                            className="flex items-center justify-between gap-2 text-xs"
-                          >
-                            <span className="min-w-0 truncate">
-                              {member.profile_name ?? member.email ?? "Unknown member"}
-                              <span className="ml-1 text-muted-foreground">
-                                · {member.member_role}
-                              </span>
-                            </span>
-                            {member.member_role !== "owner" ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="ghost"
-                                disabled={
-                                  state.removingMemberKey ===
-                                  `${household.household_id}:${member.user_id}`
-                                }
-                                onClick={() =>
-                                  setPendingConfirmation({
-                                    type: "remove",
-                                    householdId: household.household_id,
-                                    memberUserId: member.user_id,
-                                  })
-                                }
-                              >
-                                {state.removingMemberKey ===
-                                `${household.household_id}:${member.user_id}`
-                                  ? "Removing"
-                                  : "Remove"}
-                              </Button>
-                            ) : null}
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={House}
-              title="No household yet"
-              description="Join with a code below, or share yours to invite someone."
-            />
-          )}
-        </div>
-      </section>
-
-      {ownedHousehold ? (
-        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
-          <p className="text-sm font-medium text-foreground">Invite members</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Share this code to invite people to {ownedHousehold.household_name}.
-          </p>
-          <div className="mt-5 space-y-3">
-            <Label>Household code</Label>
-            <button
-              type="button"
-              className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-3 py-3 text-left text-sm font-medium tracking-[0.2em] hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() => actions.onCopyHouseholdCode(ownedHousehold.join_code)}
-              title="Copy household code"
-            >
-              <span>{ownedHousehold.join_code}</span>
-              <Clipboard className="size-4" />
-            </button>
-          </div>
-        </section>
-      ) : null}
-
       <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
         <p className="text-sm font-medium text-foreground">
           Baby profile
@@ -282,9 +119,89 @@ export function Households() {
             </p>
           </div>
         ) : (
-          <p className="mt-3 text-sm text-muted-foreground">Loading baby profile...</p>
+          <div className="mt-5 space-y-3">
+            <span className="sr-only">Loading baby profile…</span>
+            <Skeleton className="h-3 w-12" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-9 w-full" />
+          </div>
         )}
       </section>
+
+      <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
+        <p className="text-sm font-medium text-foreground">Your households</p>
+        {uniqueHouseholds.length > 1 ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            New feeds and pumping sessions are logged to your preferred household.
+          </p>
+        ) : null}
+        <div className="mt-5 space-y-3">
+          {state.isLoadingHouseholds ? (
+            <div className="space-y-3">
+              <span className="sr-only">Loading households…</span>
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : uniqueHouseholds.length > 0 ? (
+            <div className="space-y-3">
+              {uniqueHouseholds.map((household) => (
+                <HouseholdCard
+                  key={household.household_id}
+                  household={household}
+                  showPreferredBadge={uniqueHouseholds.length > 1}
+                  onRename={() =>
+                    setRenaming({
+                      householdId: household.household_id,
+                      name: household.household_name,
+                    })
+                  }
+                  onLeave={() =>
+                    setPendingConfirmation({
+                      type: "leave",
+                      householdId: household.household_id,
+                    })
+                  }
+                  onRemoveMember={(memberUserId) =>
+                    setPendingConfirmation({
+                      type: "remove",
+                      householdId: household.household_id,
+                      memberUserId,
+                    })
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={House}
+              title="No household yet"
+              description="Join with a code below, or share yours to invite someone."
+            />
+          )}
+        </div>
+      </section>
+
+      {ownedHousehold ? (
+        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
+          <p className="text-sm font-medium text-foreground">Invite members</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Share this code to invite people to {ownedHousehold.household_name}.
+          </p>
+          <div className="mt-5 space-y-3">
+            <Label>Household code</Label>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-3 py-3 text-left text-sm font-medium tracking-[0.2em] hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => actions.onCopyHouseholdCode(ownedHousehold.join_code)}
+              title="Copy household code"
+            >
+              <span>{ownedHousehold.join_code}</span>
+              <Clipboard className="size-4" />
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
         <p className="text-sm font-medium text-foreground">Join a household</p>

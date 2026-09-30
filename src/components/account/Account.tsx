@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
-import { Check, Download, FileDown, LogOut, Moon, Sun } from "lucide-react";
+import { Check, Moon, Sun } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { useAccountContext } from "../../contexts/account-context";
-import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 
 export function Account() {
   const { state, actions } = useAccountContext();
   const [profileName, setProfileName] = useState(state.profileName);
-  const { canInstall, showIosInstructions, isInstalled, promptInstall } =
-    useInstallPrompt();
 
   useEffect(() => {
     setProfileName(state.profileName);
@@ -20,7 +17,25 @@ export function Account() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-6 py-2 sm:gap-8 sm:py-3">
         <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
-          <p className="text-sm font-medium text-foreground">Preferences</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">Preferences</p>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="size-8"
+              onClick={actions.onToggleDarkMode}
+              aria-pressed={state.isDarkMode}
+              aria-label={state.isDarkMode ? "Use light mode" : "Use dark mode"}
+              title={state.isDarkMode ? "Use light mode" : "Use dark mode"}
+            >
+              {state.isDarkMode ? (
+                <Sun className="size-4" />
+              ) : (
+                <Moon className="size-4" />
+              )}
+            </Button>
+          </div>
           <form
             className="mt-5 space-y-3"
             onSubmit={(event) => {
@@ -97,95 +112,6 @@ export function Account() {
               </Button>
             </div>
           </div>
-        </section>
-
-        <section className="rounded-lg border border-border/70 bg-muted/30 p-4">
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            onClick={actions.onToggleDarkMode}
-            aria-pressed={state.isDarkMode}
-          >
-            {state.isDarkMode ? (
-              <Sun className="size-4" />
-            ) : (
-              <Moon className="size-4" />
-            )}
-            {state.isDarkMode ? "Use light mode" : "Use dark mode"}
-          </Button>
-        </section>
-
-        <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
-          <p className="text-sm font-medium text-foreground">Your data</p>
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-3 w-full"
-            onClick={actions.onExportData}
-          >
-            <FileDown className="size-4" />
-            Export activity
-          </Button>
-          <input
-            id="nara-import-input"
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={actions.onImportFileChange}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-2 w-full"
-            disabled={state.isImporting}
-            onClick={actions.onOpenImport}
-          >
-            <Download className="size-4" />
-            {state.isImporting
-              ? state.importProgress
-                ? `Importing ${state.importProgress.processed}/${state.importProgress.total}`
-                : "Importing"
-              : "Import Nara Data"}
-          </Button>
-          {!state.isImporting && state.importResultMessage ? (
-            <p className="mt-2 text-sm text-muted-foreground">
-              {state.importResultMessage}
-            </p>
-          ) : null}
-        </section>
-
-        {!isInstalled && (canInstall || showIosInstructions) ? (
-          <section className="rounded-lg border border-border/70 bg-muted/30 p-5 sm:p-6 shadow-sm">
-            <p className="text-sm font-medium text-foreground">Install CoFeed</p>
-            {canInstall ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-3 w-full"
-                onClick={() => void promptInstall()}
-              >
-                <Download className="size-4" />
-                Add to home screen
-              </Button>
-            ) : (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Tap the Share icon in Safari, then "Add to Home Screen" to install
-                CoFeed.
-              </p>
-            )}
-          </section>
-        ) : null}
-        <section className="p-0">
-          <Button
-            type="button"
-            className="w-full"
-            variant="outline"
-            onClick={actions.onSignOut}
-          >
-            <LogOut className="size-4" />
-            Sign Out
-          </Button>
         </section>
       </div>
     </div>
