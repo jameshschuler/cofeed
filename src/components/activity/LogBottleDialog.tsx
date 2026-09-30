@@ -44,7 +44,7 @@ export function LogBottleDialog() {
       <Button
         type="button"
         size="icon"
-        className="fixed right-4 bottom-[calc(7rem+env(safe-area-inset-bottom))] z-40 size-12 rounded-full shadow-lg sm:static sm:size-9 sm:rounded-md sm:shadow-xs"
+        className="fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 size-12 rounded-full shadow-lg sm:static sm:size-9 sm:rounded-md sm:shadow-xs"
         aria-label="Log activity"
         title="Log activity"
         onClick={handleOpen}
