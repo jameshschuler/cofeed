@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FeedLogItem } from "../types/route-types";
+import type { FeedLogItem, PumpingLogItem } from "../types/route-types";
 import {
   formatDayLabel,
   formatPortion,
@@ -9,7 +9,9 @@ import {
   getRecentDays,
   sumFeedVolumesMl,
   getLocalDayKey,
+  groupByLocalDay,
   groupFeedsByDay,
+  mergeRecentActivity,
   toMl,
 } from "./activity-format";
 
@@ -136,5 +138,50 @@ describe("totals and ranges", () => {
     expect(days).toHaveLength(7);
     expect(getLocalDayKey(days[0])).toBe("2026-09-21");
     expect(getLocalDayKey(days[6])).toBe("2026-09-27");
+  });
+});
+
+describe("recent activity", () => {
+  const pump = (id: string, started_at: string): PumpingLogItem => ({
+    id,
+    started_at,
+    created_at: started_at,
+    volume: 120,
+    unit: "ml",
+    source: "cofeed",
+    household_name: "Home",
+    logger_name: null,
+  });
+
+  it("merges feeds and pumping newest first without dropping any", () => {
+    const items = mergeRecentActivity(
+      Array.from({ length: 8 }, (_, index) =>
+        feed({
+          id: `feed-${index}`,
+          started_at: `2026-09-29T${String(10 + index)}:00:00`,
+        }),
+      ),
+      [pump("pump-1", "2026-09-29T12:30:00"), pump("pump-2", "2026-09-29T20:00:00")],
+    );
+
+    expect(items).toHaveLength(10);
+    expect(items[0]).toMatchObject({
+      type: "pumping",
+      started_at: "2026-09-29T20:00:00",
+    });
+    const times = items.map((item) => new Date(item.started_at).getTime());
+    expect(times).toEqual([...times].sort((a, b) => b - a));
+  });
+
+  it("splits a window that crosses midnight into two days", () => {
+    const items = mergeRecentActivity(
+      [feed({ id: "late", started_at: "2026-09-29T23:00:00" })],
+      [pump("early", "2026-09-30T01:00:00")],
+    );
+
+    expect(groupByLocalDay(items).map((group) => group.dayKey)).toEqual([
+      "2026-09-30",
+      "2026-09-29",
+    ]);
   });
 });

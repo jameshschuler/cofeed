@@ -1,4 +1,4 @@
-import type { FeedLogItem, VolumeUnit } from "../types/route-types";
+import type { FeedLogItem, PumpingLogItem, VolumeUnit } from "../types/route-types";
 import { ML_PER_OZ } from "./volume";
 
 export function toMl(value: number | null, unit: VolumeUnit | null) {
@@ -146,4 +146,26 @@ export function getRecentDays(count: number, now = new Date()) {
     date.setDate(now.getDate() - (count - 1 - index));
     return date;
   });
+}
+
+export type RecentActivityItem =
+  | { type: "feed"; started_at: string; feed: FeedLogItem }
+  | { type: "pumping"; started_at: string; session: PumpingLogItem };
+
+export function mergeRecentActivity(
+  feeds: FeedLogItem[],
+  pumpingLogs: PumpingLogItem[],
+): RecentActivityItem[] {
+  return [
+    ...feeds.map((feed) => ({
+      type: "feed" as const,
+      started_at: feed.started_at,
+      feed,
+    })),
+    ...pumpingLogs.map((session) => ({
+      type: "pumping" as const,
+      started_at: session.started_at,
+      session,
+    })),
+  ].sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
 }

@@ -1,16 +1,11 @@
 import { useState } from "react";
-import { Milk } from "lucide-react";
 import {
-  formatPortion,
-  formatTime,
   formatTimeSince,
   formatVolume,
-  getFeedVolumesMl,
   getLocalDayKey,
   sumFeedVolumesMl,
 } from "../../lib/activity-format";
 import { useDashboardContext } from "../../contexts/dashboard-context";
-import { EmptyState } from "../ui/empty-state";
 import {
   Select,
   SelectContent,
@@ -18,19 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { SourceBadge } from "../activity/SourceBadge";
-import { cn } from "../../lib/utils";
 import { PumpingStats } from "./PumpingStats";
 import { WeeklyStats } from "./WeeklyStats";
-import { ACTIVITY_STYLES } from "./activity-styles";
-import { ActivityHeader } from "./ActivityHeader";
+import { RecentActivity } from "./RecentActivity";
 
 export function Dashboard() {
   const { state, actions } = useDashboardContext();
   const {
     feeds,
     weeklyFeeds,
-    pumpingLogs,
     weeklyPumpingLogs,
     isLoadingActivity,
     isLoadingWeeklyStats,
@@ -51,16 +42,6 @@ export function Dashboard() {
   );
 
   const lastFeedStartedAt = feeds[0]?.started_at ?? null;
-  const recentActivities = [
-    ...feeds.map((feed) => ({ type: "feed" as const, at: feed.started_at, feed })),
-    ...pumpingLogs.map((session) => ({
-      type: "pumping" as const,
-      at: session.started_at,
-      session,
-    })),
-  ]
-    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-    .slice(0, 5);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -162,120 +143,7 @@ export function Dashboard() {
             errorMessage={weeklyPumpingError}
           />
         </div>
-        <div className="mt-4 flex items-baseline justify-between gap-2">
-          <p className="text-sm font-medium text-foreground">Recent activity</p>
-          <p className="text-xs text-muted-foreground">Last 24 hours</p>
-        </div>
-        {isLoadingActivity ? (
-          <div className="mt-3 space-y-3 pr-1">
-            <span className="sr-only">Loading recent activity…</span>
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                aria-hidden="true"
-                className="h-20 animate-pulse rounded-lg border bg-muted/20"
-              />
-            ))}
-          </div>
-        ) : recentActivities.length > 0 ? (
-          <div className="mt-3 space-y-3 pr-1">
-            {recentActivities.map((activity) => {
-              if (activity.type === "pumping") {
-                return (
-                  <div
-                    key={`pumping-${activity.session.id}`}
-                    className={cn(
-                      "space-y-1 rounded-lg border px-4 py-3 shadow-sm",
-                      ACTIVITY_STYLES.pumping.card,
-                    )}
-                  >
-                    <ActivityHeader
-                      kind="pumping"
-                      title={`Pumped ${formatPortion(
-                        activity.session.volume,
-                        activity.session.unit,
-                        displayVolumeUnit,
-                      )}`}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {formatTime(activity.session.started_at)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.session.household_name} ·{" "}
-                      {activity.session.logger_name ?? "Unknown caregiver"}
-                    </p>
-                    <SourceBadge source={activity.session.source} />
-                  </div>
-                );
-              }
-
-              const feed = activity.feed;
-              const hasFormula =
-                !!feed.formula_portion_volume && feed.formula_portion_volume > 0;
-              const hasBreastMilk =
-                !!feed.breast_milk_portion_volume &&
-                feed.breast_milk_portion_volume > 0;
-              const { totalMl } = getFeedVolumesMl(feed);
-
-              return (
-                <div
-                  key={feed.id}
-                  className={cn(
-                    "space-y-2 rounded-lg border px-4 py-3 shadow-sm",
-                    ACTIVITY_STYLES.feed.card,
-                  )}
-                >
-                  <div className="space-y-1">
-                    <ActivityHeader
-                      kind="feed"
-                      title={formatVolume(totalMl, displayVolumeUnit)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {formatTime(feed.started_at)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {feed.household_name} · {feed.logger_name ?? "Unknown caregiver"}
-                    </p>
-                    <SourceBadge source={feed.source} />
-                  </div>
-                  <div className="space-y-1">
-                    {hasFormula ? (
-                      <p className="text-xs text-muted-foreground">
-                        Formula:{" "}
-                        {formatPortion(
-                          feed.formula_portion_volume,
-                          feed.formula_portion_unit,
-                          displayVolumeUnit,
-                        )}
-                      </p>
-                    ) : null}
-                    {hasBreastMilk ? (
-                      <p className="text-xs text-muted-foreground">
-                        Breast milk:{" "}
-                        {formatPortion(
-                          feed.breast_milk_portion_volume,
-                          feed.breast_milk_portion_unit,
-                          displayVolumeUnit,
-                        )}
-                      </p>
-                    ) : null}
-                  </div>
-                  {!(hasFormula && hasBreastMilk) ? (
-                    <span className="inline-block rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                      {hasBreastMilk ? "Breast milk only" : "Formula only"}
-                    </span>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Milk}
-            title="Nothing logged in the last 24 hours"
-            description="Tap + to log a feed or pumping session."
-          />
-        )}
+        <RecentActivity />
       </div>
     </div>
   );
