@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AuthLoading } from "../components/AuthLoading";
-import { Feeds } from "../components/Feeds";
-import { FeedsProvider } from "../components/feeds-context";
-import { LogBottleDialog } from "../components/LogBottleDialog";
-import { PrivateLayout } from "../components/PrivateLayout";
-import { RouteShell } from "../components/RouteShell";
-import { SessionRequired } from "../components/SessionRequired";
+import { AuthLoading } from "../components/layout/AuthLoading";
+import { Feeds } from "../components/feeds/Feeds";
+import { FeedsProvider } from "../contexts/feeds-context";
+import { LogBottleDialog } from "../components/activity/LogBottleDialog";
+import { PrivateLayout } from "../components/layout/PrivateLayout";
+import { RouteShell } from "../components/layout/RouteShell";
+import { SessionRequired } from "../components/layout/SessionRequired";
 import { useRouteScreen } from "../hooks/useRouteScreen";
 
 function FeedsPage() {

@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Clipboard, House, Pencil } from "lucide-react";
-import { useHouseholdContext } from "./household-context";
-import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Badge } from "./ui/badge";
-import { EmptyState } from "./ui/empty-state";
-import { householdNameSchema, MAX_HOUSEHOLD_NAME_LENGTH } from "../lib/api-contracts";
+import { useHouseholdContext } from "../../contexts/household-context";
+import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Badge } from "../ui/badge";
+import { EmptyState } from "../ui/empty-state";
+import {
+  householdNameSchema,
+  MAX_HOUSEHOLD_NAME_LENGTH,
+} from "../../lib/api-contracts";
 
 export function Households() {
   const { state, actions } = useHouseholdContext();

@@ -1,14 +1,14 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Loader2, Plus } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { useFeedsContext } from "./feeds-context";
-import { formatVolume, toMl } from "../lib/activity-format";
-import { toDateTimeInputValue } from "../lib/timezone";
-import { getMaxPortionVolume } from "../lib/volume";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { useFeedsContext } from "../../contexts/feeds-context";
+import { formatVolume, toMl } from "../../lib/activity-format";
+import { toDateTimeInputValue } from "../../lib/timezone";
+import { getMaxPortionVolume } from "../../lib/volume";
 
 export function LogBottleDialog() {
   const { state, actions, displayVolumeUnit } = useFeedsContext();

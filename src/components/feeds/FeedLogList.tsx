@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Milk, Pencil, Trash2 } from "lucide-react";
-import { Button } from "./ui/button";
-import { SourceBadge } from "./ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { EmptyState } from "./ui/empty-state";
-import { ActivityListHeader } from "./ActivityListHeader";
+import { Button } from "../ui/button";
+import { SourceBadge } from "../activity/SourceBadge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { EmptyState } from "../ui/empty-state";
+import { ActivityListHeader } from "../activity/ActivityListHeader";
 import { EditBottleDialog } from "./EditBottleDialog";
-import { useFeedsContext } from "./feeds-context";
+import { useFeedsContext } from "../../contexts/feeds-context";
 import {
   formatDateTime,
   formatDayLabel,
@@ -14,8 +14,8 @@ import {
   formatVolume,
   getFeedVolumesMl,
   groupFeedsByDay,
-} from "../lib/activity-format";
-import type { FeedLogItem } from "../types/route-types";
+} from "../../lib/activity-format";
+import type { FeedLogItem } from "../../types/route-types";
 
 export function FeedLogList() {
   const { state, actions, displayVolumeUnit } = useFeedsContext();

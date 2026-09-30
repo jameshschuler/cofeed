@@ -1,22 +1,12 @@
-import { useEffect, useRef, useState } from "react";
-import type { FormEvent, KeyboardEvent, ReactNode } from "react";
-import {
-  Check,
-  Droplet,
-  Loader2,
-  Milk,
-  RotateCcw,
-  SendHorizontal,
-  Trash2,
-} from "lucide-react";
-import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { MAX_ACTIVITY_TEXT_LENGTH } from "../lib/activity-text";
-import type { ChatMessage } from "../lib/chat-history";
-import { formatTime } from "../lib/activity-format";
-import { capitalize, cn } from "../lib/utils";
-import { useChatContext } from "./chat-context";
-import type { VolumeUnit } from "../types/route-types";
+import { useEffect, useRef } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
+import { Loader2, RotateCcw, SendHorizontal } from "lucide-react";
+import { Button } from "../ui/button";
+import { MAX_ACTIVITY_TEXT_LENGTH } from "../../lib/activity-text";
+import { useChatContext } from "../../contexts/chat-context";
+import type { VolumeUnit } from "../../types/route-types";
+import { AssistantBubble } from "./AssistantBubble";
+import { LoggedMessage } from "./LoggedMessage";
 
 const PROMPTS: Record<VolumeUnit, { examples: string[]; placeholder: string }> = {
   oz: {
@@ -38,89 +28,6 @@ const PROMPTS: Record<VolumeUnit, { examples: string[]; placeholder: string }> =
 };
 
 const MAX_COMPOSER_HEIGHT_PX = 160;
-
-function AssistantBubble({ children, tone }: { children: ReactNode; tone?: "error" }) {
-  return (
-    <div className="flex justify-start">
-      <div
-        className={cn(
-          "max-w-[85%] rounded-2xl rounded-bl-md border px-3.5 py-2.5 text-sm",
-          tone === "error"
-            ? "border-destructive/40 bg-destructive/10 text-destructive"
-            : "bg-background text-foreground",
-        )}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function LoggedMessage({
-  message,
-  isUndoing,
-  onUndo,
-}: {
-  message: Extract<ChatMessage, { kind: "logged" }>;
-  isUndoing: boolean;
-  onUndo: () => void;
-}) {
-  return (
-    <AssistantBubble>
-      <p className="mb-2 font-medium">
-        {message.undone ? "Removed" : "Added"}
-        {message.householdName ? (
-          <span className="font-normal text-muted-foreground">
-            {" "}
-            {message.undone ? "from" : "to"} {message.householdName}
-          </span>
-        ) : null}
-      </p>
-      <ul className="space-y-1.5">
-        {message.entries.map((entry) => {
-          const Icon = entry.kind === "feed" ? Milk : Droplet;
-          return (
-            <li
-              key={entry.id}
-              className={cn(
-                "flex items-center gap-2 rounded-lg bg-muted/50 px-2.5 py-1.5",
-                (message.undone || message.removedIds?.includes(entry.id)) &&
-                  "text-muted-foreground line-through",
-              )}
-            >
-              <Icon className="size-4 shrink-0 text-primary" />
-              <span className="flex-1">{capitalize(entry.summary)}</span>
-              <span className="text-xs text-muted-foreground">
-                {formatTime(entry.startedAt)}
-              </span>
-              {message.undone || message.removedIds?.includes(entry.id) ? null : (
-                <Check className="size-4 shrink-0 text-primary" />
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {message.notUnderstood ? (
-        <p className="mt-2 text-xs text-muted-foreground">{message.notUnderstood}</p>
-      ) : null}
-      {message.undone ? null : (
-        <div className="mt-2 flex justify-end">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="h-7"
-            disabled={isUndoing}
-            onClick={onUndo}
-          >
-            {isUndoing ? <Loader2 className="size-3.5 animate-spin" /> : null}
-            Undo
-          </Button>
-        </div>
-      )}
-    </AssistantBubble>
-  );
-}
 
 export function ActivityChat() {
   const {
@@ -283,60 +190,5 @@ export function ActivityChat() {
         </Button>
       </form>
     </div>
-  );
-}
-
-export function ClearChatButton() {
-  const { messages, clear } = useChatContext();
-  const [isConfirming, setIsConfirming] = useState(false);
-
-  if (messages.length === 0) {
-    return null;
-  }
-
-  return (
-    <>
-      <Button
-        type="button"
-        size="icon"
-        variant="ghost"
-        className="size-9"
-        aria-label="Clear chat"
-        title="Clear chat"
-        onClick={() => setIsConfirming(true)}
-      >
-        <Trash2 className="size-5 sm:size-4" />
-      </Button>
-      <Dialog open={isConfirming} onOpenChange={setIsConfirming}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Clear chat history?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This removes the conversation from this device. Feeds and pumping sessions
-            you logged stay saved.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setIsConfirming(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => {
-                clear();
-                setIsConfirming(false);
-              }}
-            >
-              Clear
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Droplet, Milk } from "lucide-react";
+import { Milk } from "lucide-react";
 import {
   formatPortion,
   formatTime,
@@ -7,70 +7,22 @@ import {
   formatVolume,
   getFeedVolumesMl,
   sumFeedVolumesMl,
-} from "../lib/activity-format";
-import { useDashboardContext } from "./dashboard-context";
-import { EmptyState } from "./ui/empty-state";
+} from "../../lib/activity-format";
+import { useDashboardContext } from "../../contexts/dashboard-context";
+import { EmptyState } from "../ui/empty-state";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { SourceBadge } from "./ui/badge";
-import { cn } from "../lib/utils";
-
-const ACTIVITY_STYLES = {
-  feed: {
-    label: "Feed",
-    Icon: Milk,
-    card: "border-l-4 border-l-primary",
-    icon: "bg-primary/10 text-primary",
-    chip: "border-primary/30 bg-primary/10 text-primary",
-  },
-  pumping: {
-    label: "Pump",
-    Icon: Droplet,
-    card: "border-l-4 border-l-sky-500 bg-sky-50/60 dark:bg-sky-950/20",
-    icon: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
-    chip: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-  },
-} as const;
-
-function ActivityHeader({
-  kind,
-  title,
-}: {
-  kind: keyof typeof ACTIVITY_STYLES;
-  title: string;
-}) {
-  const style = ACTIVITY_STYLES[kind];
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2.5">
-        <span
-          className={cn(
-            "flex size-8 shrink-0 items-center justify-center rounded-full",
-            style.icon,
-          )}
-        >
-          <style.Icon className="size-4" />
-        </span>
-        <p className="text-sm font-medium">{title}</p>
-      </div>
-      <span
-        className={cn(
-          "shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium",
-          style.chip,
-        )}
-      >
-        {style.label}
-      </span>
-    </div>
-  );
-}
+} from "../ui/select";
+import { SourceBadge } from "../activity/SourceBadge";
+import { cn } from "../../lib/utils";
 import { PumpingStats } from "./PumpingStats";
 import { WeeklyStats } from "./WeeklyStats";
+import { ACTIVITY_STYLES } from "./activity-styles";
+import { ActivityHeader } from "./ActivityHeader";
 
 export function Dashboard() {
   const { state, actions } = useDashboardContext();
