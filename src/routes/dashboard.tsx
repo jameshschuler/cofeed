@@ -19,6 +19,7 @@ function DashboardPage() {
     isPreferencesReady,
     feedsRouteState,
     feedsRouteActions,
+    refreshActivity,
     weeklyFeeds,
     pumpingLogs,
     weeklyPumpingLogs,
@@ -69,6 +70,7 @@ function DashboardPage() {
           successMessage={successMessage}
           headerAction={isReady ? <LogBottleDialog /> : undefined}
           onNavigate={goTo}
+          onRefresh={isReady ? refreshActivity : undefined}
         >
           <DashboardProvider
             state={{
