@@ -171,29 +171,31 @@ export function LogBottleDialog() {
                 />
               </div>
             )}
-            <Button
-              type="submit"
-              disabled={
-                mode === "bottle"
-                  ? state.compose.isSaving
-                  : state.compose.isSavingPumping
-              }
-            >
-              {(
-                mode === "bottle"
-                  ? state.compose.isSaving
-                  : state.compose.isSavingPumping
-              ) ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Saving
-                </>
-              ) : mode === "bottle" ? (
-                "Log Bottle"
-              ) : (
-                "Log Pumping"
-              )}
-            </Button>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={
+                  mode === "bottle"
+                    ? state.compose.isSaving
+                    : state.compose.isSavingPumping
+                }
+              >
+                {(
+                  mode === "bottle"
+                    ? state.compose.isSaving
+                    : state.compose.isSavingPumping
+                ) ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Saving
+                  </>
+                ) : mode === "bottle" ? (
+                  "Log Bottle"
+                ) : (
+                  "Log Pumping"
+                )}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

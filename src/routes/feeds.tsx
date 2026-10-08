@@ -18,6 +18,7 @@ function FeedsPage() {
     isPreferencesReady,
     feedsRouteState,
     feedsRouteActions,
+    refreshActivity,
   } = useRouteScreen("feeds");
 
   const isReady =
@@ -50,6 +51,7 @@ function FeedsPage() {
           successMessage={successMessage}
           headerAction={isReady ? <LogBottleDialog /> : undefined}
           onNavigate={goTo}
+          onRefresh={isReady ? refreshActivity : undefined}
         >
           <Feeds />
         </PrivateLayout>

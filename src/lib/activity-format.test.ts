@@ -11,7 +11,10 @@ import {
   getLocalDayKey,
   groupByLocalDay,
   groupFeedsByDay,
+  isOnLocalDay,
   mergeRecentActivity,
+  summarizeFeeds,
+  summarizePumping,
   toMl,
 } from "./activity-format";
 
@@ -183,5 +186,60 @@ describe("recent activity", () => {
       "2026-09-30",
       "2026-09-29",
     ]);
+  });
+});
+
+describe("daily summaries", () => {
+  it("counts feeds and averages their volume", () => {
+    expect(
+      summarizeFeeds([
+        feed({ formula_portion_volume: 60, formula_portion_unit: "ml" }),
+        feed({ breast_milk_portion_volume: 120, breast_milk_portion_unit: "ml" }),
+      ]),
+    ).toEqual({
+      formulaMl: 60,
+      breastMilkMl: 120,
+      totalMl: 180,
+      count: 2,
+      averageMl: 90,
+    });
+  });
+
+  it("counts pumping sessions and averages across units", () => {
+    const summary = summarizePumping([
+      {
+        id: "a",
+        started_at: "2026-10-07T08:00:00",
+        created_at: "2026-10-07T08:00:00",
+        volume: 4,
+        unit: "oz",
+        source: "cofeed",
+        household_name: "Home",
+        logger_name: null,
+      },
+      {
+        id: "b",
+        started_at: "2026-10-07T14:00:00",
+        created_at: "2026-10-07T14:00:00",
+        volume: 100,
+        unit: "ml",
+        source: "cofeed",
+        household_name: "Home",
+        logger_name: null,
+      },
+    ]);
+    expect(summary.count).toBe(2);
+    expect(summary.totalMl).toBeCloseTo(218.294);
+    expect(summary.averageMl).toBeCloseTo(109.147);
+  });
+
+  it("reports zero averages when nothing was logged", () => {
+    expect(summarizeFeeds([]).averageMl).toBe(0);
+    expect(summarizePumping([])).toEqual({ totalMl: 0, count: 0, averageMl: 0 });
+  });
+
+  it("matches entries by local calendar day", () => {
+    expect(isOnLocalDay("2026-10-07T23:30:00", "2026-10-07")).toBe(true);
+    expect(isOnLocalDay("2026-10-06T23:30:00", "2026-10-07")).toBe(false);
   });
 });

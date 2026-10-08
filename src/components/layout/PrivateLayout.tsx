@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { Droplet, LayoutDashboard, MessageCircle, Milk, Settings } from "lucide-react";
 import { Button } from "../ui/button";
@@ -11,6 +11,8 @@ import {
   CardTitle,
 } from "../ui/card";
 import type { PrivateScreen } from "../../types/route-types";
+import { usePullToRefresh } from "../../hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "./PullToRefreshIndicator";
 
 const SCREEN_TITLES: Record<PrivateScreen, string> = {
   dashboard: "Dashboard",
@@ -50,6 +52,7 @@ export function PrivateLayout({
   successMessage,
   headerAction,
   onNavigate,
+  onRefresh,
   children,
 }: {
   screen: PrivateScreen;
@@ -57,8 +60,11 @@ export function PrivateLayout({
   successMessage: string | null;
   headerAction?: ReactNode;
   onNavigate: (screen: PrivateScreen) => void;
+  onRefresh?: () => Promise<void>;
   children: ReactNode;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pull = usePullToRefresh(scrollRef, onRefresh);
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -105,7 +111,17 @@ export function PrivateLayout({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-0 pb-3 pt-0 sm:pb-4">
+        <CardContent
+          ref={scrollRef}
+          className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-y-contain px-0 pb-3 pt-0 sm:pb-4"
+        >
+          {onRefresh ? (
+            <PullToRefreshIndicator
+              offset={pull.offset}
+              isPulling={pull.isPulling}
+              isRefreshing={pull.isRefreshing}
+            />
+          ) : null}
           {children}
         </CardContent>
         <CardFooter className="mt-auto border-t px-0 pt-2 pb-0">

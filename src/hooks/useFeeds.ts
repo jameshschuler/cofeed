@@ -563,7 +563,14 @@ export function useFeeds({
     onCancelEdit: () => setEditingPumpingId(null),
   };
 
+  async function refreshCurrentActivity() {
+    if (feedData.activeBabyId) {
+      await refreshActivity(feedData.activeBabyId);
+    }
+  }
+
   return {
+    refreshActivity: refreshCurrentActivity,
     feedsRouteState,
     feedsRouteActions,
     pumpingRouteState,

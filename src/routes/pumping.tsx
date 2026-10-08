@@ -19,6 +19,7 @@ function PumpingPage() {
     isPreferencesReady,
     feedsRouteState,
     feedsRouteActions,
+    refreshActivity,
     pumpingRouteState,
     pumpingRouteActions,
   } = useRouteScreen("pumping");
@@ -53,6 +54,7 @@ function PumpingPage() {
           successMessage={successMessage}
           headerAction={isReady ? <LogBottleDialog /> : undefined}
           onNavigate={goTo}
+          onRefresh={isReady ? refreshActivity : undefined}
         >
           <PumpingProvider
             state={{
