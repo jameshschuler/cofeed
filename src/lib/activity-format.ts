@@ -169,3 +169,28 @@ export function mergeRecentActivity(
     })),
   ].sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
 }
+
+export function isOnLocalDay(value: string, dayKey: string) {
+  return getLocalDayKey(new Date(value)) === dayKey;
+}
+
+export function summarizeFeeds(feeds: FeedLogItem[]) {
+  const totals = sumFeedVolumesMl(feeds);
+  return {
+    ...totals,
+    count: feeds.length,
+    averageMl: feeds.length > 0 ? totals.totalMl / feeds.length : 0,
+  };
+}
+
+export function summarizePumping(sessions: PumpingLogItem[]) {
+  const totalMl = sessions.reduce(
+    (sum, session) => sum + toMl(session.volume, session.unit),
+    0,
+  );
+  return {
+    totalMl,
+    count: sessions.length,
+    averageMl: sessions.length > 0 ? totalMl / sessions.length : 0,
+  };
+}
