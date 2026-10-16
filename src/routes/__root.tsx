@@ -39,7 +39,11 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   useEffect(() => {
-    if (!import.meta.env.DEV || !("serviceWorker" in navigator)) {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+    if (!import.meta.env.DEV) {
+      void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
       return;
     }
     void navigator.serviceWorker.getRegistrations().then((registrations) => {

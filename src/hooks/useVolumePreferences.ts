@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../lib/auth-token";
+import { readCachedVolumeUnit, writeCachedVolumeUnit } from "../lib/preferences-cache";
 import { getPreferences, updatePreferences } from "../server/preferences";
 import type { VolumeUnit } from "../types/route-types";
 
@@ -25,10 +26,19 @@ export function useVolumePreferences({
       return;
     }
 
+    const cachedUnit = readCachedVolumeUnit(userId);
+    if (cachedUnit) {
+      setDisplayVolumeUnit(cachedUnit);
+      setLoadedUserId(userId);
+    }
+
     let isCurrentRequest = true;
     void getAccessToken()
       .then((accessToken) => getPreferences({ data: { accessToken } }))
-      .then((data) => setDisplayVolumeUnit(data.displayVolumeUnit))
+      .then((data) => {
+        setDisplayVolumeUnit(data.displayVolumeUnit);
+        writeCachedVolumeUnit(userId, data.displayVolumeUnit);
+      })
       .catch((error: unknown) => {
         setErrorMessage(
           error instanceof Error ? error.message : "Unable to load preferences.",
@@ -62,6 +72,7 @@ export function useVolumePreferences({
           displayVolumeUnit: nextUnit,
         },
       });
+      writeCachedVolumeUnit(userId, nextUnit);
       setSuccessMessage("Volume display preference saved.");
     } catch (error) {
       setErrorMessage(

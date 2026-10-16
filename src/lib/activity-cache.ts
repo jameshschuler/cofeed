@@ -6,6 +6,8 @@ type ActivityCache = {
   pumpingLogs: PumpingLogItem[];
   weeklyFeeds: FeedLogItem[];
   weeklyPumpingLogs: PumpingLogItem[];
+  feedsScope?: string;
+  pumpingScope?: string;
 };
 
 function getKey(userId: string, babyId: string) {
@@ -20,7 +22,11 @@ export function readLastBabyId(userId: string) {
   if (typeof window === "undefined") {
     return null;
   }
-  return window.localStorage.getItem(getBabyKey(userId));
+  try {
+    return window.localStorage.getItem(getBabyKey(userId));
+  } catch {
+    return null;
+  }
 }
 
 export function writeLastBabyId(userId: string, babyId: string) {

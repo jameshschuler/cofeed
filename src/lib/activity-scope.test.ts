@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { ALL_HOUSEHOLDS_CACHE_KEY, getActivityScope } from "./activity-scope";
+import {
+  ALL_HOUSEHOLDS_CACHE_KEY,
+  getActivityScope,
+  getListScopeKey,
+} from "./activity-scope";
 
 describe("getActivityScope", () => {
   it("queries and caches the preferred baby on the dashboard by default", () => {
@@ -23,5 +27,19 @@ describe("getActivityScope", () => {
         cacheKey: ALL_HOUSEHOLDS_CACHE_KEY,
       });
     }
+  });
+});
+
+describe("getListScopeKey", () => {
+  it("identifies a list by its range", () => {
+    expect(getListScopeKey("today", null)).toBe("today");
+    expect(getListScopeKey("last24h", "2026-10-01")).toBe("last24h");
+  });
+
+  it("includes the picked day for date ranges", () => {
+    expect(getListScopeKey("date", "2026-10-01")).toBe("date:2026-10-01");
+    expect(getListScopeKey("date", "2026-10-02")).not.toBe(
+      getListScopeKey("date", "2026-10-01"),
+    );
   });
 });

@@ -84,6 +84,7 @@ describe("activity cache", () => {
     });
 
     expect(() => writeLastBabyId("user-1", "baby-1")).not.toThrow();
+    expect(readLastBabyId("user-1")).toBeNull();
     expect(() =>
       writeActivityCache("user-1", "baby-1", {
         feeds: [],

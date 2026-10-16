@@ -23,3 +23,7 @@ export function getActivityScope(
 export function getListRange(screen: Screen, filter: FeedFilter): ActivityRange {
   return screen === "dashboard" ? "last24h" : filter;
 }
+
+export function getListScopeKey(range: ActivityRange, date: string | null) {
+  return range === "date" ? `date:${date ?? ""}` : range;
+}

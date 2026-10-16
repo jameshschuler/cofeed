@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { getAccessToken } from "../lib/auth-token";
 import type { ActivityRange } from "../lib/activity-range";
-import { getActivityScope, getListRange } from "../lib/activity-scope";
+import { getActivityScope, getListRange, getListScopeKey } from "../lib/activity-scope";
 import { getDeviceTimezone } from "../lib/timezone";
 import {
   readActivityCache,
@@ -63,6 +63,8 @@ export function useFeedData({
       pumpingLogs: PumpingLogItem[];
       weeklyFeeds: FeedLogItem[];
       weeklyPumpingLogs: PumpingLogItem[];
+      feedsScope: string;
+      pumpingScope: string;
     }>,
   ) {
     const userId = session?.user?.id;
@@ -75,6 +77,8 @@ export function useFeedData({
       pumpingLogs: patch.pumpingLogs ?? cached?.pumpingLogs ?? [],
       weeklyFeeds: patch.weeklyFeeds ?? cached?.weeklyFeeds ?? [],
       weeklyPumpingLogs: patch.weeklyPumpingLogs ?? cached?.weeklyPumpingLogs ?? [],
+      feedsScope: patch.feedsScope ?? cached?.feedsScope,
+      pumpingScope: patch.pumpingScope ?? cached?.pumpingScope,
     });
     setLastSyncedAt(new Date().toISOString());
     setIsUsingCachedActivity(false);
@@ -106,7 +110,10 @@ export function useFeedData({
         return;
       }
       setFeedLogs(feedData);
-      saveCachedActivity(cacheKey, { feeds: feedData });
+      saveCachedActivity(cacheKey, {
+        feeds: feedData,
+        feedsScope: getListScopeKey(filter, filter === "date" ? date : null),
+      });
     } catch (error) {
       if (feedRequestIdRef.current !== requestId) {
         return;
@@ -146,7 +153,10 @@ export function useFeedData({
         return;
       }
       setPumpingLogs(pumpingData);
-      saveCachedActivity(cacheKey, { pumpingLogs: pumpingData });
+      saveCachedActivity(cacheKey, {
+        pumpingLogs: pumpingData,
+        pumpingScope: getListScopeKey(filter, filter === "date" ? date : null),
+      });
     } catch (error) {
       if (pumpingRequestIdRef.current !== requestId) {
         return;
@@ -246,7 +256,31 @@ export function useFeedData({
 
     async function loadActivity() {
       const loadRequestId = ++loadRequestIdRef.current;
-      setIsLoadingFeeds(true);
+      const listRange = getListRange(screen, feedFilter);
+      const dateForScreen = screen === "dashboard" ? null : selectedDate;
+      const listScope = getListScopeKey(listRange, dateForScreen);
+      const lastBabyId = session?.user?.id ? readLastBabyId(session.user.id) : null;
+      const snapshot = lastBabyId
+        ? getCachedActivity(getActivityScope(screen, lastBabyId, viewBabyId).cacheKey)
+        : null;
+      const hasCachedList =
+        snapshot?.feedsScope === listScope && snapshot.pumpingScope === listScope;
+      const hasCachedWeekly = screen === "dashboard" && snapshot !== null;
+
+      if (lastBabyId && snapshot && hasCachedList) {
+        setActiveBabyId(lastBabyId);
+        setFeedLogs(snapshot.feeds);
+        setPumpingLogs(snapshot.pumpingLogs);
+        setLastSyncedAt(snapshot.savedAt);
+        setIsLoadingFeeds(false);
+      } else {
+        setIsLoadingFeeds(true);
+      }
+      if (snapshot && hasCachedWeekly) {
+        setWeeklyFeedLogs(snapshot.weeklyFeeds);
+        setWeeklyPumpingLogs(snapshot.weeklyPumpingLogs);
+        setIsLoadingWeeklyStats(false);
+      }
       setFeedsLoadError(null);
 
       try {
@@ -258,19 +292,16 @@ export function useFeedData({
         }
         setActiveBabyId(babyId);
         setTargetHouseholdName(householdCount > 1 ? householdName : null);
-        const dateForScreen = screen === "dashboard" ? null : selectedDate;
-        await refreshFeedLogs(babyId, getListRange(screen, feedFilter), dateForScreen);
-        await refreshPumpingLogs(
-          babyId,
-          getListRange(screen, feedFilter),
-          dateForScreen,
-        );
-
-        if (screen === "dashboard") {
-          await refreshWeeklyStats(babyId);
-        } else {
+        if (screen !== "dashboard") {
           setIsLoadingWeeklyStats(false);
         }
+        await Promise.all([
+          refreshFeedLogs(babyId, listRange, dateForScreen),
+          refreshPumpingLogs(babyId, listRange, dateForScreen),
+          screen === "dashboard"
+            ? refreshWeeklyStats(babyId, { showLoading: !hasCachedWeekly })
+            : undefined,
+        ]);
       } catch (error) {
         const cachedBabyId = session?.user?.id ? readLastBabyId(session.user.id) : null;
         const cached = cachedBabyId
